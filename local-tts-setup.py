@@ -64,7 +64,26 @@ def setup_tts():
     
     # Load voice pack
     voice_name = 'af'  # Default voice (50-50 mix of Bella & Sarah)
-    voice_file = download_model(f'voices/{voice_name}.pt')
+    
+    #download all the voices
+    names = [
+    "af.pt",
+    "af_bella.pt",
+    "af_nicole.pt",
+    "af_sarah.pt",
+    "af_sky.pt",
+    "am_adam.pt",
+    "am_michael.pt",
+    "bf_emma.pt",
+    "bf_isabella.pt",
+    "bm_george.pt",
+    "bm_lewis.pt"
+]
+    
+
+   
+    for name in names:
+        voice_file = download_model(f'voices/{name}')
     
     voicepack = torch.load(voice_file, weights_only=True).to(device)
     print(f'Loaded voice: {voice_name}')
