@@ -25,7 +25,7 @@ def download_model(filename):
     full_path = os.path.join(KOKORO_DIR, filename)
     if not os.path.exists(full_path):
         print(f"Model file {filename} not found. Attempting to download...")
-        url = f"https://huggingface.co/hexgrad/Kokoro-82M/resolve/main/{filename}"
+        url = f"https://huggingface.co/hexgrad/Kokoro-82M/resolve/2f0893c/{filename}"
         response = requests.get(url, stream=True)
         response.raise_for_status()
         
