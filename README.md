@@ -29,7 +29,7 @@ A graphical interface for the Kokoro-82M text-to-speech model, providing an easy
 
 3. Clone this repository:
    ```bash
-   git clone https://github.com/your-repo/tts-gui.git
+   git clone https://github.com/AmitTzah/TTS-kokoro
    cd tts-gui
    ```
 
