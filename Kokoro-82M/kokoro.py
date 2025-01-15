@@ -152,6 +152,10 @@ def find_cut_off_index(tokens, start, max_length, priority_symbols, follow_symbo
                 if cut_token == VOCAB[' ']:
                     return next_idx
                 
+                if cut_token==VOCAB['.'] and tokens[next_idx]==VOCAB[' ']:
+                    return next_idx
+
+                
                 if next_idx < len(tokens) and tokens[next_idx] in follow_tokens:
                     return next_idx
 
