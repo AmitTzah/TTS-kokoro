@@ -89,18 +89,27 @@ TTS-kokoro/
    - Download 1.51 64x.msi version from [eSpeak NG releases](https://github.com/espeak-ng/espeak-ng/releases)
    - Install to `C:\Program Files\eSpeak NG`
 
-2. Install Python dependencies:
+2. Install PyTorch — **CUDA version** (NVIDIA GPU, recommended) or CPU-only:
    ```bash
-   pip install torch soundfile pygame phonemizer requests scipy munch transformers
+   # For NVIDIA GPU (much faster):
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+   # For CPU only (slower, no GPU required):
+   pip install torch torchvision torchaudio
    ```
 
-3. Clone this repository:
+3. Install remaining Python dependencies:
+   ```bash
+   pip install soundfile pygame phonemizer requests scipy munch transformers
+   ```
+
+4. Clone this repository:
    ```bash
    git clone https://github.com/AmitTzah/TTS-kokoro
    cd TTS-kokoro
    ```
 
-4. Run the setup script:
+5. Run the setup script:
    ```bash
    python scripts/setup.py
    ```
@@ -168,8 +177,14 @@ If model files fail to download:
    ```
 
 ### CUDA Support
-- If you have an NVIDIA GPU, ensure CUDA is properly installed
-- The GUI will automatically use CUDA if available
+- If you have an NVIDIA GPU, install the CUDA version of PyTorch:
+  ```bash
+  pip uninstall torch torchvision torchaudio -y
+  pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+  ```
+- Verify with: `python -c "import torch; print(torch.cuda.is_available())"` — should print `True`
+- The GUI will automatically use CUDA if available and show `"model on cuda"` in the status bar
+- If it shows `"model on cpu"`, you have the CPU-only PyTorch build — reinstall as above
 
 ## License
 This project is licensed under the Apache 2.0 License — see the [LICENSE](LICENSE) file for details.

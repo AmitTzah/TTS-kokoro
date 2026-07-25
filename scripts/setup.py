@@ -72,6 +72,12 @@ def main() -> None:
     print("\n[4/4] Testing audio generation ...")
     import torch
 
+    if not torch.cuda.is_available():
+        print("  ⚠ WARNING: CUDA not available — using CPU (slow).")
+        print("    To use your NVIDIA GPU, install the CUDA version of PyTorch:")
+        print("    pip uninstall torch torchvision torchaudio -y")
+        print("    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124")
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"  Device: {device}")
 
