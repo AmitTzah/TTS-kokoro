@@ -18,6 +18,7 @@ def set_loading(
     """Show the indeterminate progress bar and status message."""
     _status(widgets, message)
     _progress_show(widgets)
+    _button_state(widgets["generate_button"], tk.DISABLED)
 
 
 def set_ready(

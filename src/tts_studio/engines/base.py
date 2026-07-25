@@ -29,6 +29,8 @@ class VoiceInfo:
     id: str
     name: str
     language: str = ""
+    is_custom: bool = False  # True for user-cloned voices (deletable)
+    reference_path: str = ""  # Path to reference audio for custom voices
 
 
 class TTSEngine(ABC):
@@ -75,3 +77,22 @@ class TTSEngine(ABC):
     def device(self) -> str:
         """Device string (e.g. 'cuda', 'cpu')."""
         ...
+
+    @property
+    def supports_cloning(self) -> bool:
+        """Whether this engine supports voice cloning from reference audio."""
+        return False
+
+    def add_voice(self, name: str, reference_path: str) -> VoiceInfo:
+        """Add a custom voice from a reference audio clip.
+
+        Raises NotImplementedError if the engine doesn't support cloning.
+        """
+        raise NotImplementedError(f"{self.__class__.__name__} does not support voice cloning")
+
+    def delete_voice(self, voice_id: str) -> None:
+        """Delete a previously added custom voice.
+
+        Raises NotImplementedError if the engine doesn't support cloning.
+        """
+        raise NotImplementedError(f"{self.__class__.__name__} does not support voice cloning")

@@ -38,6 +38,7 @@ class TTSApp:
         self._loading = True
         self._audio_file: Path | None = None
         self._paused = False
+        self._voice_map: dict[str, str] = {}  # display_name → voice_id
 
         self.player = AudioPlayer(frequency=SAMPLE_RATE)
 
@@ -50,6 +51,8 @@ class TTSApp:
             on_provider_change=self._on_provider_change,
             on_model_change=self._on_model_change,
             on_model_manager=self._open_model_manager,
+            on_clone_voice=self._on_clone_voice,
+            on_delete_voice=self._on_delete_voice,
         )
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -129,12 +132,84 @@ class TTSApp:
         self._dispatch(self._on_engine_ready, voice_ids)
 
     def _on_engine_ready(self, widgets: dict, voice_ids: list[str]) -> None:
-        set_voices(widgets, voice_ids)
+        self._refresh_voices()
         self._loading = False
         set_ready(
             widgets,
             f"Ready — {len(voice_ids)} voices on {self.engine.device}.",
         )
+
+    # ── voice cloning ────────────────────────────────────────
+
+    def _on_clone_voice(self) -> None:
+        if self.engine is None or not self.engine.supports_cloning:
+            return
+        from tkinter import filedialog, simpledialog
+
+        path = filedialog.askopenfilename(
+            title="Select Reference Audio (10s clip)",
+            filetypes=[("Audio files", "*.wav *.mp3 *.flac *.ogg"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        name = simpledialog.askstring(
+            "Voice Name", "Name for this cloned voice:"
+        )
+        if not name:
+            return
+        try:
+            voice = self.engine.add_voice(name, path)
+            self._refresh_voices()
+            # Select the new voice by display name
+            if voice.name in self._voice_map:
+                self._widgets["voice_var"].set(voice.name)
+        except Exception as exc:
+            self._show_error("Clone Failed", str(exc))
+
+    def _on_delete_voice(self) -> None:
+        if self.engine is None or not self.engine.supports_cloning:
+            return
+        voice_name = self._widgets["voice_var"].get()
+        voice_id = self._voice_map.get(voice_name, voice_name)
+        voices = self.engine.list_voices()
+        target = next((v for v in voices if v.id == voice_id), None)
+        if target is None or not target.is_custom:
+            return
+        from tkinter import messagebox
+
+        if messagebox.askyesno("Delete Voice", f"Delete '{target.name}'?"):
+            self.engine.delete_voice(voice_id)
+            self._refresh_voices()
+
+    def _refresh_voices(self) -> None:
+        if self.engine is None:
+            return
+        voices = self.engine.list_voices()
+        # Build display-name → id mapping, show names in dropdown
+        self._voice_map = {v.name: v.id for v in voices}
+        set_voices(self._widgets, list(self._voice_map.keys()))
+        # Show/hide clone/delete buttons based on engine capability
+        if self.engine.supports_cloning:
+            self._widgets["clone_btn"].config(state=tk.NORMAL)
+        else:
+            self._widgets["clone_btn"].config(state=tk.DISABLED)
+        # Delete button enabled only for custom voices
+        self._update_delete_btn()
+        # Bind dropdown change to update delete button
+        self._widgets["voice_dropdown"].bind(
+            "<<ComboboxSelected>>", lambda e: self._update_delete_btn(), add="+"
+        )
+
+    def _update_delete_btn(self) -> None:
+        voice_name = self._widgets["voice_var"].get()
+        voice_id = self._voice_map.get(voice_name, voice_name)
+        if self.engine and self.engine.supports_cloning:
+            voices = self.engine.list_voices()
+            target = next((v for v in voices if v.id == voice_id), None)
+            if target and target.is_custom:
+                self._widgets["delete_btn"].config(state=tk.NORMAL)
+            else:
+                self._widgets["delete_btn"].config(state=tk.DISABLED)
 
     # ── model manager ────────────────────────────────────────
 
@@ -153,14 +228,15 @@ class TTSApp:
             return
 
         text = self._widgets["text_entry"].get("1.0", tk.END).strip()
-        voice = self._widgets["voice_var"].get()
+        voice_name = self._widgets["voice_var"].get()
+        voice_id = self._voice_map.get(voice_name, voice_name)
 
         if not text:
             set_generation_done(self._widgets, False, "Please enter some text.")
             return
 
         set_generating(self._widgets)
-        threading.Thread(target=self._generate, args=(text, voice), daemon=True).start()
+        threading.Thread(target=self._generate, args=(text, voice_id), daemon=True).start()
 
     def _generate(self, text: str, voice_id: str) -> None:
         try:

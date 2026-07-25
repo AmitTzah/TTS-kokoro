@@ -53,13 +53,84 @@ class ChatterboxEngine(TTSEngine):
             self._is_multilingual = False
         self._model_id = model_id
 
+    # ── Voice management ───────────────────────────────────
+
+    @property
+    def supports_cloning(self) -> bool:
+        return True
+
+    def _refs_dir(self) -> Path:
+        from tts_studio.config import MODELS_DIR
+
+        d = MODELS_DIR / "references"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
     def list_voices(self) -> list[VoiceInfo]:
-        # Chatterbox has a built-in default voice when no reference audio
-        # is provided.  Voice cloning via audio_prompt_path is also available.
-        return [
+        voices = [
             VoiceInfo(id="default", name="Default", language="en"),
-            VoiceInfo(id="clone", name="Clone (needs reference audio)", language="en"),
         ]
+        # Scan saved reference clips
+        refs_dir = self._refs_dir()
+        for meta_file in sorted(refs_dir.glob("*.json")):
+            try:
+                import json
+
+                meta = json.loads(meta_file.read_text())
+                ref_path = refs_dir / meta.get("reference_file", "")
+                voices.append(
+                    VoiceInfo(
+                        id=meta["id"],
+                        name=meta["name"],
+                        language=meta.get("language", "en"),
+                        is_custom=True,
+                        reference_path=str(ref_path) if ref_path.exists() else "",
+                    )
+                )
+            except Exception:
+                continue
+        return voices
+
+    def add_voice(self, name: str, reference_path: str) -> VoiceInfo:
+        import json
+        import shutil
+        import uuid
+
+        src = Path(reference_path)
+        if not src.exists():
+            raise FileNotFoundError(f"Reference audio not found: {reference_path}")
+
+        voice_id = f"clone-{uuid.uuid4().hex[:8]}"
+        refs_dir = self._refs_dir()
+
+        # Copy reference clip
+        ext = src.suffix or ".wav"
+        dest_name = f"{voice_id}{ext}"
+        shutil.copy2(src, refs_dir / dest_name)
+
+        # Save metadata
+        meta = {
+            "id": voice_id,
+            "name": name,
+            "language": "en",
+            "reference_file": dest_name,
+        }
+        (refs_dir / f"{voice_id}.json").write_text(json.dumps(meta, indent=2))
+
+        return VoiceInfo(
+            id=voice_id,
+            name=name,
+            language="en",
+            is_custom=True,
+            reference_path=str(refs_dir / dest_name),
+        )
+
+    def delete_voice(self, voice_id: str) -> None:
+        refs_dir = self._refs_dir()
+        for f in refs_dir.glob(f"{voice_id}.*"):
+            f.unlink()
+
+    # ── Generation ─────────────────────────────────────────
 
     def generate(
         self, text: str, voice_id: str, **kwargs: Any
@@ -73,7 +144,13 @@ class ChatterboxEngine(TTSEngine):
 
         import soundfile as sf
 
+        # Look up reference path for custom voices
         audio_prompt = kwargs.get("audio_prompt_path")
+        if audio_prompt is None and voice_id != "default":
+            for v in self.list_voices():
+                if v.id == voice_id and v.reference_path:
+                    audio_prompt = v.reference_path
+                    break
 
         # Suppress chatterbox stdout during generation — it may emit
         # emoji/Unicode that breaks on Windows console (cp1252).

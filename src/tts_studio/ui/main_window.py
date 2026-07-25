@@ -17,6 +17,8 @@ def build_ui(
     on_provider_change: Callable[[str], None],
     on_model_change: Callable[[str], None],
     on_model_manager: Callable[[], None],
+    on_clone_voice: Callable[[], None],
+    on_delete_voice: Callable[[], None],
 ) -> dict[str, tk.Widget | tk.StringVar]:
     """Build all widgets."""
 
@@ -65,6 +67,13 @@ def build_ui(
         voice_frame, textvariable=voice_var, values=[], state="readonly"
     )
     voice_dropdown.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
+    clone_btn = ttk.Button(voice_frame, text="＋", width=3, command=on_clone_voice)
+    clone_btn.grid(row=0, column=1, padx=(2, 2), pady=5)
+
+    delete_btn = ttk.Button(voice_frame, text="✕", width=3, command=on_delete_voice)
+    delete_btn.grid(row=0, column=2, padx=(0, 5), pady=5)
+
     voice_frame.columnconfigure(0, weight=1)
 
     # ── Text Input ───────────────────────────────────────────
@@ -113,6 +122,8 @@ def build_ui(
         "model_dropdown": model_dropdown,
         "voice_var": voice_var,
         "voice_dropdown": voice_dropdown,
+        "clone_btn": clone_btn,
+        "delete_btn": delete_btn,
         "text_entry": text_entry,
         "generate_button": generate_button,
         "status_label": status_label,
