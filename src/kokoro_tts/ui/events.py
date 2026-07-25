@@ -44,13 +44,15 @@ def set_generation_done(
 ) -> None:
     """Return from 'generating' state.
 
-    On success: enable playback controls.  On failure: keep them disabled.
+    On success: enable playback controls, reset play button to "Play".
+    On failure: keep them disabled.
     """
     _progress_hide(widgets)
     _status(widgets, message)
     _button_state(widgets["generate_button"], tk.NORMAL)
 
     if success:
+        widgets["play_button"].config(text="Play")
         _button_state(widgets["play_button"], tk.NORMAL)
         _button_state(widgets["pause_resume_button"], tk.DISABLED)
         widgets["pause_resume_button"].config(text="Pause")

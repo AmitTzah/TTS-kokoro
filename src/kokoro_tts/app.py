@@ -174,12 +174,14 @@ class TTSApp:
 
     def _on_play(self) -> None:
         """Play / Stop toggle."""
-        if self.player.is_playing:
+        if self.player.is_playing or self._paused:
             self.player.stop()
             self._widgets["play_button"].config(
                 text="Play", command=self._on_play
             )
-            self._widgets["pause_resume_button"].config(state=tk.DISABLED)
+            self._widgets["pause_resume_button"].config(
+                state=tk.DISABLED, text="Pause"
+            )
             self._paused = False
         else:
             try:
@@ -192,8 +194,28 @@ class TTSApp:
                     state=tk.NORMAL, text="Pause"
                 )
                 self._paused = False
+                # Poll for natural playback end so the button reverts
+                self._poll_playback_end()
             except Exception as exc:
                 self._show_error("Playback Error", str(exc))
+
+    def _poll_playback_end(self) -> None:
+        """Periodically check if playback finished; revert button when done.
+
+        Keeps polling while paused — pygame may report ``get_busy() == False``
+        for paused audio on some SDL versions, but we must not reset the
+        button state while the user has intentionally paused.
+        """
+        if self._paused or self.player.is_playing:
+            self.root.after(200, self._poll_playback_end)
+        else:
+            self._widgets["play_button"].config(
+                text="Play", command=self._on_play
+            )
+            self._widgets["pause_resume_button"].config(
+                state=tk.DISABLED, text="Pause"
+            )
+            self._paused = False
 
     def _on_pause_resume(self) -> None:
         """Pause / Resume toggle."""
