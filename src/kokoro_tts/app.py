@@ -56,6 +56,9 @@ class TTSApp:
             on_save=self._on_save,
         )
 
+        # Clean up temp files when the user closes the window
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
         # Show UI immediately, defer heavy loading
         self.root.update()
         self.root.after(50, self._start_loading)
@@ -152,9 +155,16 @@ class TTSApp:
             wav_path, _phonemes = generate_audio(
                 self.model, text, voicepack, lang=lang
             )
-            # Clean up previous temp file
-            if self._audio_file is not None and self._audio_file.exists():
-                self._audio_file.unlink(missing_ok=True)
+            # Clean up previous temp file.
+            # player.unload() stops playback AND releases the file handle
+            # (pygame.mixer.music.stop() alone keeps it locked on Windows).
+            if self._audio_file is not None:
+                self.player.unload()
+                try:
+                    if self._audio_file.exists():
+                        self._audio_file.unlink()
+                except OSError:
+                    pass  # Already gone or still locked — not critical
             self._audio_file = wav_path
             self._dispatch(set_generation_done, True, "Audio generated successfully.")
         except Exception as exc:
@@ -202,6 +212,18 @@ class TTSApp:
         dest = save_audio_dialog(self._audio_file)
         if dest:
             self._widgets["status_label"].config(text=f"Audio saved to {dest}")
+
+    # ── cleanup ────────────────────────────────────────────────
+
+    def _on_close(self) -> None:
+        """Clean up temp files and destroy the window."""
+        self.player.unload()
+        if self._audio_file is not None and self._audio_file.exists():
+            try:
+                self._audio_file.unlink()
+            except OSError:
+                pass
+        self.root.destroy()
 
     # ── helpers ────────────────────────────────────────────────
 

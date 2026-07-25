@@ -50,6 +50,15 @@ class AudioPlayer:
         """Resume paused playback."""
         pygame.mixer.music.unpause()
 
+    def unload(self) -> None:
+        """Stop playback and release the audio file handle.
+
+        On Windows, :meth:`stop` alone does not close the file — this
+        is needed before deleting the underlying WAV file.
+        """
+        pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
+
     # ── state queries ─────────────────────────────────────────
 
     @property
