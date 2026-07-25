@@ -1,7 +1,8 @@
-"""Setup script — installs kokoro package and generates test audio.
+"""Setup script — CLI convenience for first-time setup.
 
-The ``kokoro`` pip package auto-downloads model weights on first use.
-This script also checks Hugging Face for newer releases.
+Installs dependencies and pre-downloads models.
+The GUI handles this via the Model Manager, but this script
+is useful for headless/CI or first-time CLI users.
 
 Usage::
 
@@ -14,102 +15,64 @@ import subprocess
 import sys
 from pathlib import Path
 
-import requests
-
-# Add src/ to path so we can import kokoro_tts
+# Add src/ to path
 _SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_SRC))
 
-from kokoro_tts.config import configure_espeak
-
-HF_MODEL_ID = "hexgrad/Kokoro-82M"
-CURRENT_VERSION = "v1.0"
+from tts_studio.config import configure_espeak
 
 
-def _check_for_updates() -> None:
-    """Query the Hugging Face API for the latest model SHA."""
-    url = f"https://huggingface.co/api/models/{HF_MODEL_ID}"
+def _check_package(name: str, pip_name: str | None = None) -> bool:
+    """Check if a Python package is installed; offer to install if not."""
     try:
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception:
-        print("  (could not check for model updates — offline?)")
-        return
-
-    latest_sha = data.get("sha", "")[:8]
-    if latest_sha:
-        print(f"  Model SHA: {latest_sha}")
-        print(f"  Visit: https://huggingface.co/{HF_MODEL_ID}")
-
-
-def _cleanup_vendor() -> None:
-    """Offer to delete the old vendored Kokoro-82M/ directory."""
-    vendor = Path(__file__).resolve().parent.parent / "Kokoro-82M"
-    if not vendor.exists():
-        return
-
-    print(f"\n  Old vendored model found: {vendor}")
-    print("  v1.0 uses the kokoro pip package — these files are obsolete.")
-    answer = input("  Delete Kokoro-82M/ ? [y/N]: ").strip().lower()
-    if answer == "y":
-        import shutil
-
-        shutil.rmtree(vendor)
-        print("  Deleted.")
+        __import__(name)
+        return True
+    except ImportError:
+        pip = pip_name or name
+        print(f"  {name} not found.")
+        answer = input(f"  Install {pip}? [Y/n]: ").strip().lower()
+        if answer in ("", "y", "yes"):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pip])
+            return True
+        return False
 
 
 def main() -> None:
-    """Run the setup."""
-    print("Kokoro TTS v1.0 Setup\n" + "=" * 50)
+    print("TTS Studio Setup\n" + "=" * 50)
 
-    # 0. Check for updates + cleanup
-    print("\n[0/4] Checking for updates ...")
-    _check_for_updates()
-    _cleanup_vendor()
-
-    # 1. Configure eSpeak
-    print("\n[1/4] Configuring eSpeak-NG ...")
+    # 1. eSpeak
+    print("\n[1/3] Configuring eSpeak-NG ...")
     configure_espeak()
     print("  OK.")
 
-    # 2. Ensure kokoro package is installed
-    print("\n[2/4] Checking kokoro package ...")
-    try:
-        import kokoro  # noqa: F401
-    except ImportError:
-        print("  Installing kokoro...")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "kokoro>=0.9.2"]
-        )
-    print(f"  OK (kokoro available)")
+    # 2. Check packages
+    print("\n[2/3] Checking dependencies ...")
+    kokoro_ok = _check_package("kokoro")
+    chatterbox_ok = _check_package("chatterbox", "chatterbox-tts")
 
-    # 3. First-run model download
-    print("\n[3/4] Initialising model (first run downloads ~300MB) ...")
-    from kokoro import KPipeline
+    if not kokoro_ok and not chatterbox_ok:
+        print("  No engines installed. Install at least one.")
+        print("    pip install kokoro>=0.9.2")
+        print("    pip install chatterbox-tts")
+        return
 
-    print("  This may take a few minutes on first run...")
-    pipeline = KPipeline(lang_code="a")
-    print(f"  Model loaded on: {pipeline.model.device if pipeline.model else 'cpu'}")
+    # 3. Pre-download models
+    print("\n[3/3] Pre-downloading models ...")
+    if kokoro_ok:
+        print("  Downloading Kokoro v1.0 (this may take a few minutes)...")
+        from kokoro import KPipeline
+        KPipeline(lang_code="a")
+        print("  Kokoro ready.")
 
-    # 4. Test generation
-    print("\n[4/4] Testing audio generation ...")
-    text = (
-        "How could I know? It's an unanswerable question. "
-        "Like asking an unborn child if they'll lead a good life. "
-        "They haven't even been born."
-    )
-
-    from kokoro_tts.tts.generator import generate_audio
-
-    wav_path, phonemes = generate_audio(pipeline, text, "af_heart")
-    print(f"  Output : {wav_path}")
-    if phonemes:
-        safe = phonemes.encode("ascii", "replace").decode()
-        print(f"  Phonemes: {safe}")
+    if chatterbox_ok:
+        print("  Downloading Chatterbox Turbo...")
+        from tts_studio.engines.chatterbox_engine import ChatterboxEngine
+        engine = ChatterboxEngine()
+        engine.load_model("chatterbox-turbo")
+        print("  Chatterbox ready.")
 
     print("\n" + "=" * 50)
-    print("Setup complete!  Run the GUI with:  python -m kokoro_tts")
+    print("Setup complete.  Launch with:  python -m tts_studio")
 
 
 if __name__ == "__main__":

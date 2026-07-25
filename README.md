@@ -1,34 +1,33 @@
 <h1 align="center">TTS Studio</h1>
 
 <p align="center">
-  Desktop GUI for local text-to-speech models on Windows
-  <br>
-  Currently powered by <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> v1.0
+  Multi-engine desktop GUI for local TTS models on Windows
 </p>
 
 <p align="center">
-  <a href="https://github.com/AmitTzah/TTS-kokoro/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
+  <a href="https://github.com/AmitTzah/TTS-Studio/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.8–3.12-blue" alt="Python">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey" alt="Platform">
 </p>
 
 ---
 
-Type or paste text, pick a voice, generate audio. All local.
+Supports multiple TTS engines: **Kokoro-82M** (54 fixed voices, 9 languages) and **Chatterbox** (default voice + voice cloning, 23+ languages, paralinguistic tags). Switch engines via the Provider dropdown.
 
 ## Install
 
-You need Python 3.8–3.12 and [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) at `C:\Program Files\eSpeak NG`.
+Python 3.8–3.12 and [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) at `C:\Program Files\eSpeak NG`.
 
 ```bash
 git clone https://github.com/AmitTzah/TTS-Studio
 cd TTS-Studio
-pip install -e .
-python scripts/setup.py        # downloads model (~300MB) + tests
-python -m kokoro_tts            # launch
+pip install -e .                    # Kokoro engine
+pip install chatterbox-tts          # Chatterbox engine (optional)
+python scripts/setup.py             # pre-download models (~300MB each)
+python -m tts_studio                # launch
 ```
 
-Or double-click `tts-gui.pyw`.
+Or skip setup.py — the GUI downloads models on first use via Manage Models.
 
 For NVIDIA GPU:
 
@@ -39,60 +38,44 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 ## Usage
 
-1. Launch, wait for model to load
-2. Pick a voice
-3. Type text, click Generate
-4. Play, pause, stop, save
+1. Pick a Provider and Model from the dropdowns
+2. Select a voice, type text, click Generate
+3. Play, pause, stop, save
 
-## Voices
+Use the **Manage Models** button to download or delete models. Models are stored in `models/` (gitignored).
 
-54+ voices across 9 languages. The voice list is fetched from Hugging Face at startup.
+## Engines
 
-| Language | Code | Examples |
-|----------|------|----------|
-| American English | `a` | `af_heart`, `af_bella`, `am_adam` |
-| British English | `b` | `bf_emma`, `bf_isabella`, `bm_george` |
-| Japanese | `j` | `jf_alpha`, `jm_alpha` |
-| Mandarin Chinese | `z` | `zf_alpha`, `zm_alpha` |
-| Spanish, French, Hindi, Italian, Portuguese | `e`, `f`, `h`, `i`, `p` | espeak-ng voices |
+| Engine | Voices | Languages | Size |
+|--------|--------|-----------|------|
+| Kokoro v1.0 | 54 fixed | 9 | 82M |
+| Chatterbox Turbo | Default + cloning | English | 350M |
+| Chatterbox Multilingual V3 | Default + cloning | 23+ | 500M |
 
 ## Structure
 
 ```
-TTS-kokoro/
+TTS-Studio/
 ├── tts-gui.pyw
-├── src/kokoro_tts/
-│   ├── __main__.py          ← entry point
-│   ├── app.py               ← controller
-│   ├── config.py            ← paths, languages, HF_HOME
-│   ├── splash.py            ← splash window
-│   ├── tts/generator.py     ← audio generation
-│   ├── audio/player.py      ← playback
-│   ├── audio/saver.py       ← WAV export
-│   └── ui/                  ← tkinter widgets + state
-├── scripts/setup.py         ← install + version check
-├── tests/                   ← 9 tests
-└── models/                  ← gitignored, model weights
+├── src/tts_studio/
+│   ├── app.py                   ← multi-engine controller
+│   ├── engines/                 ← TTSEngine abstraction
+│   │   ├── kokoro_engine.py
+│   │   └── chatterbox_engine.py
+│   ├── models/                  ← model catalog + downloader
+│   ├── tts/generator.py
+│   ├── audio/player.py, saver.py
+│   └── ui/                      ← main window, model manager, events
+├── tests/                       ← 11 tests
+├── models/                      ← gitignored
+└── pyproject.toml
 ```
-
-## How it works
-
-Uses the [`kokoro`](https://pypi.org/project/kokoro/) pip package. `KPipeline` handles G2P, chunking, voice loading, and model download. Weights go into `models/huggingface/` (gitignored). Generation runs on a background thread.
 
 ## Dev
 
 ```bash
 python -m pytest tests/ -v
-python scripts/setup.py      # also checks for model updates
 ```
-
-## Troubleshooting
-
-**eSpeak not found**: must be `C:\Program Files\eSpeak NG\libespeak-ng.dll`.
-
-**Model on cpu**: you have CPU PyTorch. Reinstall with CUDA (see above).
-
-**Download fails**: delete `models/huggingface/` to retry.
 
 ## License
 
