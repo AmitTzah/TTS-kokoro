@@ -48,3 +48,6 @@ Desktop.ini
 
 # System
 .DS_Store
+
+# Testing
+.pytest_cache/
