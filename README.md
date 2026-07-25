@@ -12,7 +12,7 @@ A graphical interface for the Kokoro-82M text-to-speech model, providing an easy
 
 ## Requirements
 - Windows 10/11
-- Python 3.8+
+- Python 3.8–3.12 (Python 3.13+ is not yet supported by all dependencies)
 - eSpeak NG installed at `C:\Program Files\eSpeak NG`
 - NVIDIA GPU with CUDA support (optional but recommended)
 
@@ -24,13 +24,13 @@ A graphical interface for the Kokoro-82M text-to-speech model, providing an easy
 
 2. Install Python dependencies:
    ```bash
-   pip install torch soundfile pygame phonemizer
+   pip install torch soundfile pygame phonemizer requests scipy munch transformers
    ```
 
 3. Clone this repository:
    ```bash
    git clone https://github.com/AmitTzah/TTS-kokoro
-   cd tts-gui
+   cd TTS-kokoro
    ```
 
 4. Run the setup script:
@@ -73,6 +73,11 @@ The GUI provides 10 unique voices:
 - bm_lewis
 
 ## Troubleshooting
+
+### pip Not Found on Windows
+If `pip` is not recognized after installing Python:
+- Use `python -m pip` instead (e.g., `python -m pip install torch`)
+- Or add `Python312\Scripts\` to your user PATH environment variable
 
 ### eSpeak NG Installation
 - Ensure eSpeak NG is installed at `C:\Program Files\eSpeak NG`
