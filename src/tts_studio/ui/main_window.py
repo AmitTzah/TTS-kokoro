@@ -101,7 +101,7 @@ def build_ui(
     split_combo.pack(side="left", padx=(2, 10))
 
     ttk.Label(options_frame, text="Pause:").pack(side="left")
-    pause_var = tk.StringVar(value="0.35")
+    pause_var = tk.StringVar(value="0.75")
     pause_combo = ttk.Combobox(
         options_frame,
         textvariable=pause_var,
