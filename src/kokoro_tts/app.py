@@ -32,7 +32,7 @@ class TTSApp:
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Text-to-Speech Generator — Kokoro v1.0")
+        self.root.title("TTS Studio")
 
         if ICON_PATH.exists():
             self.root.iconbitmap(str(ICON_PATH))

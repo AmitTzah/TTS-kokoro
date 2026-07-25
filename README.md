@@ -1,7 +1,9 @@
-<h1 align="center">Kokoro TTS GUI</h1>
+<h1 align="center">TTS Studio</h1>
 
 <p align="center">
-  Desktop GUI for <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> v1.0 on Windows
+  Desktop GUI for local text-to-speech models on Windows
+  <br>
+  Currently powered by <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> v1.0
 </p>
 
 <p align="center">
@@ -19,8 +21,8 @@ Type or paste text, pick a voice, generate audio. All local.
 You need Python 3.8–3.12 and [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) at `C:\Program Files\eSpeak NG`.
 
 ```bash
-git clone https://github.com/AmitTzah/TTS-kokoro
-cd TTS-kokoro
+git clone https://github.com/AmitTzah/TTS-Studio
+cd TTS-Studio
 pip install -e .
 python scripts/setup.py        # downloads model (~300MB) + tests
 python -m kokoro_tts            # launch

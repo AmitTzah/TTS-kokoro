@@ -33,7 +33,7 @@ def create_splash() -> tuple[tk.Tk, ttk.Label]:
     """
     _set_app_id()
     root = tk.Tk()
-    root.title("Kokoro TTS — Starting...")
+    root.title("TTS Studio — Starting...")
     root.geometry("380x80")
     root.resizable(False, False)
     root.eval("tk::PlaceWindow . center")
