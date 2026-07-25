@@ -44,6 +44,12 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 Use the **Manage Models** button to download or delete models. Models are stored in `models/` (gitignored).
 
+## Text chunking
+
+The Split and Pause dropdowns control how text is broken up before generation.
+
+Kokoro splits on newlines and sub-splits at 510 tokens internally. It handles any length cleanly. Chatterbox produces nonsense after more than a few paragraphs, so TTS Studio provides paragraph and sentence chunking with configurable pause gaps.
+
 ## Engines
 
 | Engine | Voices | Languages | Size |

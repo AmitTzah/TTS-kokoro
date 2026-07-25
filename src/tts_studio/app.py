@@ -20,6 +20,7 @@ from tts_studio.ui.events import (
     set_loading,
     set_ready,
 )
+from tts_studio.text_utils import split_text
 from tts_studio.ui.main_window import build_ui, set_models, set_voices
 from tts_studio.ui.model_manager import ModelManager
 
@@ -185,9 +186,17 @@ class TTSApp:
         if self.engine is None:
             return
         voices = self.engine.list_voices()
-        # Build display-name → id mapping, show names in dropdown
         self._voice_map = {v.name: v.id for v in voices}
         set_voices(self._widgets, list(self._voice_map.keys()))
+
+        # Set default split mode based on engine capability
+        from tts_studio.engines.kokoro_engine import KokoroEngine
+
+        if isinstance(self.engine, KokoroEngine):
+            self._widgets["split_var"].set("off")  # KPipeline handles it
+        else:
+            self._widgets["split_var"].set("paragraphs")
+
         # Show/hide clone/delete buttons based on engine capability
         if self.engine.supports_cloning:
             self._widgets["clone_btn"].config(state=tk.NORMAL)
@@ -250,17 +259,21 @@ class TTSApp:
         import tempfile
 
         try:
-            chunks = TTSApp._split_text(text, split_mode)
+            chunks = split_text(text, split_mode)
 
             all_wavs = []
-            for chunk in chunks:
+            for i, chunk in enumerate(chunks):
                 if not chunk.strip():
                     continue
-                wav_path, _ = self.engine.generate(chunk, voice_id)
-                data, _ = sf.read(str(wav_path))
-                all_wavs.append(data)
-                # Clean up intermediate temp file immediately
-                wav_path.unlink()
+                try:
+                    wav_path, _ = self.engine.generate(chunk, voice_id)
+                    data, _ = sf.read(str(wav_path))
+                    all_wavs.append(data)
+                    wav_path.unlink()
+                except Exception as exc:
+                    print(f"[WARN] Chunk {i} failed: {exc}")
+                    # Insert silence for failed chunk so timing is preserved
+                    all_wavs.append(np.zeros(int(0.3 * sr), dtype=np.float32))
 
             if not all_wavs:
                 self._dispatch(set_generation_done, False, "No audio generated.")
@@ -288,25 +301,6 @@ class TTSApp:
             self._dispatch(set_generation_done, True, "Audio generated.")
         except Exception as exc:
             self._dispatch(set_generation_done, False, f"Error: {exc}")
-
-    @staticmethod
-    def _split_text(text: str, mode: str = "paragraphs") -> list[str]:
-        """Split text by paragraphs, sentences, or not at all."""
-        import re
-
-        if mode == "off":
-            return [text]
-
-        if mode == "sentences":
-            return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s.strip()]
-
-        # mode == "paragraphs"
-        # Split on double newlines. If text only has single newlines,
-        # treat each line as a paragraph.
-        paragraphs = re.split(r"\n\s*\n", text.strip())
-        if len(paragraphs) <= 1:
-            paragraphs = [p.strip() for p in text.strip().split("\n") if p.strip()]
-        return [p.strip() for p in paragraphs if p.strip()] or [text]
 
     # ── playback ─────────────────────────────────────────────
 

@@ -1,14 +1,28 @@
-"""Chatterbox TTS engine via the `chatterbox-tts` pip package.
-
-Known upstream issue: perth 1.0.1 on PyPI uses pkg_resources which
-was removed in setuptools>=81.  The fix is on perth master but
-unreleased.  We monkeypatch before importing chatterbox.
-"""
+"""Chatterbox TTS engine via the `chatterbox-tts` pip package."""
 
 from __future__ import annotations
 
+import io
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+
+
+@contextmanager
+def _suppress_stdout():
+    """Suppress stdout/stderr during model calls.
+
+    Chatterbox emits emoji/Unicode that breaks on Windows cp1252 console.
+    """
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout = io.StringIO()
+    sys.stderr = io.StringIO()
+    try:
+        yield
+    finally:
+        sys.stdout, sys.stderr = old_stdout, old_stderr
+
 
 # ── Monkeypatch perth before chatterbox touches it ──────────
 import perth as _perth
@@ -138,8 +152,6 @@ class ChatterboxEngine(TTSEngine):
         if self._model is None:
             raise RuntimeError("No model loaded")
 
-        import io
-        import sys
         import tempfile
 
         import soundfile as sf
@@ -152,22 +164,14 @@ class ChatterboxEngine(TTSEngine):
                     audio_prompt = v.reference_path
                     break
 
-        # Chatterbox caches voice conditionals — if switching back to
-        # "default" after using a cloned voice, we must reload the model
-        # to clear the cached conditional embeddings.
+        # Reload on default voice switch to clear cached conditionals
         if voice_id == "default":
             self._last_voice = getattr(self, "_last_voice", None)
             if self._last_voice != "default":
                 self._reload_model()
             self._last_voice = "default"
 
-        # Suppress chatterbox stdout during generation
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        sys.stdout = io.StringIO()
-        sys.stderr = io.StringIO()
-
-        try:
+        with _suppress_stdout():
             if self._is_multilingual:
                 lang = kwargs.get("language_id", "en")
                 wav = self._model.generate(
@@ -175,9 +179,6 @@ class ChatterboxEngine(TTSEngine):
                 )
             else:
                 wav = self._model.generate(text, audio_prompt_path=audio_prompt)
-        finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
 
         wav = wav.cpu() if wav.is_cuda else wav
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:

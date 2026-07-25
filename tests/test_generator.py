@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from kokoro_tts.tts.generator import generate_audio
+from tts_studio.tts.generator import generate_audio
 
 
 class TestGenerateAudio:
