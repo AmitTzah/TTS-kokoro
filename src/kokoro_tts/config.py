@@ -38,6 +38,7 @@ def configure_espeak() -> None:
 KOKORO_DIR = _PROJECT_ROOT / "Kokoro-82M"
 MODEL_PATH = KOKORO_DIR / "kokoro-v0_19.pth"
 VOICES_DIR = KOKORO_DIR / "voices"
+ICON_PATH = _PROJECT_ROOT / "text-to-speech-icon.ico"
 
 # Add Kokoro-82M to Python path so we can import models / kokoro
 sys.path.insert(0, str(KOKORO_DIR))

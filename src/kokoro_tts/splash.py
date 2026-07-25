@@ -8,8 +8,19 @@ full UI.
 
 from __future__ import annotations
 
+import ctypes
 import tkinter as tk
 from tkinter import ttk
+
+
+def _set_app_id() -> None:
+    """Give the app its own Windows taskbar identity (not Python's icon)."""
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "kokoro.tts.gui"
+        )
+    except Exception:
+        pass  # Non-Windows or API unavailable — not critical
 
 
 def create_splash() -> tuple[tk.Tk, ttk.Label]:
@@ -20,11 +31,18 @@ def create_splash() -> tuple[tk.Tk, ttk.Label]:
         The caller should do heavy imports, then call :func:`destroy_splash`
         and build the main UI into *root*.
     """
+    _set_app_id()
     root = tk.Tk()
     root.title("Kokoro TTS — Starting...")
     root.geometry("380x80")
     root.resizable(False, False)
     root.eval("tk::PlaceWindow . center")
+
+    # Set window icon (if available)
+    from kokoro_tts.config import ICON_PATH
+
+    if ICON_PATH.exists():
+        root.iconbitmap(str(ICON_PATH))
 
     label = ttk.Label(
         root,

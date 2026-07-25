@@ -37,6 +37,12 @@ class TTSApp:
         self.root = root
         self.root.title("Text-to-Speech Generator")
 
+        # Set window icon (already set on splash, but reassert here)
+        from kokoro_tts.config import ICON_PATH
+
+        if ICON_PATH.exists():
+            self.root.iconbitmap(str(ICON_PATH))
+
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model: torch.nn.Module | None = None
         self.voicepacks: dict[str, dict] = {}

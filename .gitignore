@@ -36,7 +36,7 @@ env/
 
 # Windows
 *.lnk
-*.ico
+!text-to-speech-icon.ico
 Thumbs.db
 Desktop.ini
 
