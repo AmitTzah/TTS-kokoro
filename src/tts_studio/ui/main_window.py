@@ -85,17 +85,53 @@ def build_ui(
     text_frame.columnconfigure(0, weight=1)
     text_frame.rowconfigure(0, weight=1)
 
-    # ── Generate Button ──────────────────────────────────────
+    # ── Options + Generate ───────────────────────────────────
+    options_frame = ttk.Frame(root)
+    options_frame.grid(row=4, column=0, padx=10, pady=(5, 0), sticky="ew")
+
+    ttk.Label(options_frame, text="Split:").pack(side="left")
+    split_var = tk.StringVar(value="paragraphs")
+    split_combo = ttk.Combobox(
+        options_frame,
+        textvariable=split_var,
+        values=["paragraphs", "sentences", "off"],
+        state="readonly",
+        width=12,
+    )
+    split_combo.pack(side="left", padx=(2, 10))
+
+    ttk.Label(options_frame, text="Pause:").pack(side="left")
+    pause_var = tk.StringVar(value="0.35")
+    pause_combo = ttk.Combobox(
+        options_frame,
+        textvariable=pause_var,
+        values=["0.15", "0.35", "0.5", "0.75", "1.0", "1.5", "2.0", "3.0", "5.0"],
+        state="readonly",
+        width=5,
+    )
+    pause_combo.pack(side="left", padx=(2, 0))
+    pause_label = ttk.Label(options_frame, text="s")
+    pause_label.pack(side="left")
+
+    # Grey out pause when split is off
+    def _on_split_change(*args):
+        if split_var.get() == "off":
+            pause_combo.config(state="disabled")
+        else:
+            pause_combo.config(state="readonly")
+
+    split_var.trace_add("write", _on_split_change)
+
     generate_button = ttk.Button(root, text="Generate Audio", command=on_generate)
-    generate_button.grid(row=4, column=0, padx=10, pady=(5, 5), sticky="ew")
+    generate_button.grid(row=5, column=0, padx=10, pady=(5, 5), sticky="ew")
 
     # ── Status Label ─────────────────────────────────────────
     status_label = ttk.Label(root, text="")
-    status_label.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
+    status_label.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
 
     # ── Audio Controls ───────────────────────────────────────
     audio_frame = ttk.LabelFrame(root, text="Generated Audio")
-    audio_frame.grid(row=6, column=0, padx=10, pady=(5, 10), sticky="ew")
+    audio_frame.grid(row=7, column=0, padx=10, pady=(5, 10), sticky="ew")
 
     play_button = ttk.Button(audio_frame, text="Play", command=on_play, state=tk.DISABLED)
     play_button.grid(row=0, column=0, padx=5, pady=5)
@@ -130,6 +166,8 @@ def build_ui(
         "play_button": play_button,
         "pause_resume_button": pause_resume_button,
         "save_button": save_button,
+        "split_var": split_var,
+        "pause_var": pause_var,
         "progress_bar": progress_bar,
     }
 

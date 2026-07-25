@@ -152,8 +152,16 @@ class ChatterboxEngine(TTSEngine):
                     audio_prompt = v.reference_path
                     break
 
-        # Suppress chatterbox stdout during generation — it may emit
-        # emoji/Unicode that breaks on Windows console (cp1252).
+        # Chatterbox caches voice conditionals — if switching back to
+        # "default" after using a cloned voice, we must reload the model
+        # to clear the cached conditional embeddings.
+        if voice_id == "default":
+            self._last_voice = getattr(self, "_last_voice", None)
+            if self._last_voice != "default":
+                self._reload_model()
+            self._last_voice = "default"
+
+        # Suppress chatterbox stdout during generation
         old_stdout = sys.stdout
         old_stderr = sys.stderr
         sys.stdout = io.StringIO()
@@ -171,11 +179,16 @@ class ChatterboxEngine(TTSEngine):
             sys.stdout = old_stdout
             sys.stderr = old_stderr
 
-        # wav is a torch tensor; save to temp file
         wav = wav.cpu() if wav.is_cuda else wav
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             sf.write(tmp.name, wav.numpy().squeeze(), self._model.sr)
             return Path(tmp.name), None
+
+    def _reload_model(self) -> None:
+        """Reload the model to clear cached voice conditionals."""
+        model_id = self._model_id
+        self.unload()
+        self.load_model(model_id)
 
     def unload(self) -> None:
         import torch
@@ -190,3 +203,9 @@ class ChatterboxEngine(TTSEngine):
     @property
     def device(self) -> str:
         return "cuda" if self._model is not None else "cpu"
+
+    @property
+    def sample_rate(self) -> int:
+        if self._model is not None:
+            return self._model.sr
+        return 24000

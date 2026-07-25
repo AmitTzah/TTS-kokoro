@@ -68,6 +68,7 @@ class KokoroEngine(TTSEngine):
 
         from tts_studio.tts.generator import generate_audio
 
+        # KPipeline handles chunking natively — split param is ignored
         return generate_audio(self._pipeline, text, voice_id)
 
     def unload(self) -> None:

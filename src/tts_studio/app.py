@@ -235,12 +235,47 @@ class TTSApp:
             set_generation_done(self._widgets, False, "Please enter some text.")
             return
 
+        split_mode = self._widgets["split_var"].get()
+        pause_sec = float(self._widgets["pause_var"].get())
         set_generating(self._widgets)
-        threading.Thread(target=self._generate, args=(text, voice_id), daemon=True).start()
+        threading.Thread(
+            target=self._generate, args=(text, voice_id, split_mode, pause_sec), daemon=True
+        ).start()
 
-    def _generate(self, text: str, voice_id: str) -> None:
+    def _generate(self, text: str, voice_id: str, split_mode: str = "paragraphs", pause_sec: float = 0.35) -> None:
+        import re
+
+        import numpy as np
+        import soundfile as sf
+        import tempfile
+
         try:
-            wav_path, _ = self.engine.generate(text, voice_id)
+            chunks = TTSApp._split_text(text, split_mode)
+
+            all_wavs = []
+            for chunk in chunks:
+                if not chunk.strip():
+                    continue
+                wav_path, _ = self.engine.generate(chunk, voice_id)
+                data, _ = sf.read(str(wav_path))
+                all_wavs.append(data)
+                # Clean up intermediate temp file immediately
+                wav_path.unlink()
+
+            if not all_wavs:
+                self._dispatch(set_generation_done, False, "No audio generated.")
+                return
+
+            # Get sample rate from engine (not hardcoded — varies per engine)
+            sr = getattr(self.engine, "sample_rate", 24000)
+            gap = np.zeros(int(pause_sec * sr), dtype=np.float32)
+            combined = all_wavs[0]
+            for w in all_wavs[1:]:
+                combined = np.concatenate([combined, gap, w])
+
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                sf.write(tmp.name, combined, sr)
+                wav_path = tmp.name
 
             if self._audio_file is not None:
                 self.player.unload()
@@ -249,10 +284,29 @@ class TTSApp:
                         self._audio_file.unlink()
                 except OSError:
                     pass
-            self._audio_file = wav_path
+            self._audio_file = Path(wav_path)
             self._dispatch(set_generation_done, True, "Audio generated.")
         except Exception as exc:
             self._dispatch(set_generation_done, False, f"Error: {exc}")
+
+    @staticmethod
+    def _split_text(text: str, mode: str = "paragraphs") -> list[str]:
+        """Split text by paragraphs, sentences, or not at all."""
+        import re
+
+        if mode == "off":
+            return [text]
+
+        if mode == "sentences":
+            return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s.strip()]
+
+        # mode == "paragraphs"
+        # Split on double newlines. If text only has single newlines,
+        # treat each line as a paragraph.
+        paragraphs = re.split(r"\n\s*\n", text.strip())
+        if len(paragraphs) <= 1:
+            paragraphs = [p.strip() for p in text.strip().split("\n") if p.strip()]
+        return [p.strip() for p in paragraphs if p.strip()] or [text]
 
     # ── playback ─────────────────────────────────────────────
 

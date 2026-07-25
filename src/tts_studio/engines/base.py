@@ -79,6 +79,11 @@ class TTSEngine(ABC):
         ...
 
     @property
+    def sample_rate(self) -> int:
+        """Audio sample rate in Hz. Default 24000."""
+        return 24000
+
+    @property
     def supports_cloning(self) -> bool:
         """Whether this engine supports voice cloning from reference audio."""
         return False
