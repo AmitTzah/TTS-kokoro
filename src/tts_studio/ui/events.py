@@ -31,11 +31,26 @@ def set_ready(
     _button_state(widgets["generate_button"], tk.NORMAL)
 
 
-def set_generating(widgets: dict[str, Any]) -> None:
-    """Enter 'generating' state: disable Generate, show progress."""
+def set_generating(widgets: dict[str, Any], chunk_count: int = 1) -> None:
+    """Enter 'generating' state: disable Generate, show progress.
+
+    If chunk_count > 1, use determinate mode with percentage.
+    Otherwise use indeterminate spinner.
+    """
     _button_state(widgets["generate_button"], tk.DISABLED)
     _status(widgets, "Generating audio...")
+    if chunk_count > 1:
+        widgets["progress_bar"].config(mode="determinate", maximum=100, value=0)
+    else:
+        widgets["progress_bar"].config(mode="indeterminate")
     _progress_show(widgets)
+
+
+def update_progress(widgets: dict[str, Any], value: float) -> None:
+    """Update the determinate progress bar (0-100)."""
+    widgets["progress_bar"]["value"] = value
+    widgets["progress_bar"].update()
+    _status(widgets, f"Generating audio... {int(value)}%")
 
 
 def set_generation_done(

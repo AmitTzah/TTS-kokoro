@@ -19,6 +19,7 @@ from tts_studio.ui.events import (
     set_generation_done,
     set_loading,
     set_ready,
+    update_progress,
 )
 from tts_studio.text_utils import split_text
 from tts_studio.ui.main_window import build_ui, set_models, set_voices
@@ -246,7 +247,8 @@ class TTSApp:
 
         split_mode = self._widgets["split_var"].get()
         pause_sec = float(self._widgets["pause_var"].get())
-        set_generating(self._widgets)
+        chunk_count = len(split_text(text, split_mode)) if split_mode != "off" else 1
+        set_generating(self._widgets, chunk_count=chunk_count)
         threading.Thread(
             target=self._generate, args=(text, voice_id, split_mode, pause_sec), daemon=True
         ).start()
@@ -262,6 +264,7 @@ class TTSApp:
             chunks = split_text(text, split_mode)
 
             all_wavs = []
+            total = len(chunks)
             for i, chunk in enumerate(chunks):
                 if not chunk.strip():
                     continue
@@ -272,8 +275,10 @@ class TTSApp:
                     wav_path.unlink()
                 except Exception as exc:
                     print(f"[WARN] Chunk {i} failed: {exc}")
-                    # Insert silence for failed chunk so timing is preserved
                     all_wavs.append(np.zeros(int(0.3 * sr), dtype=np.float32))
+                # Report progress to UI
+                pct = int((i + 1) / total * 100) if total > 0 else 100
+                self._dispatch_progress(pct)
 
             if not all_wavs:
                 self._dispatch(set_generation_done, False, "No audio generated.")
@@ -357,6 +362,9 @@ class TTSApp:
             except OSError:
                 pass
         self.root.destroy()
+
+    def _dispatch_progress(self, pct: float) -> None:
+        self.root.after(0, lambda: update_progress(self._widgets, pct))
 
     def _dispatch(self, fn: Any, *args: Any) -> None:
         self.root.after(0, lambda: fn(self._widgets, *args))
