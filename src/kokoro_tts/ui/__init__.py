@@ -1,6 +1,6 @@
 """Tkinter UI components."""
 
-from kokoro_tts.ui.main_window import build_ui
+from kokoro_tts.ui.main_window import build_ui, set_voices
 from kokoro_tts.ui.events import (
     set_generating,
     set_generation_done,
@@ -10,6 +10,7 @@ from kokoro_tts.ui.events import (
 
 __all__ = [
     "build_ui",
+    "set_voices",
     "set_generating",
     "set_generation_done",
     "set_loading",

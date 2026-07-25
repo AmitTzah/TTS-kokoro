@@ -8,8 +8,7 @@ from pathlib import Path
 # Ensure src/ is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-# Configure espeak BEFORE any module imports kokoro (which initialises
-# phonemizer backends at module level)
+# Configure espeak (needed by kokoro library's G2P)
 from kokoro_tts.config import configure_espeak
 
 configure_espeak()

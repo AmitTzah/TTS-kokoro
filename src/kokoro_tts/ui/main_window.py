@@ -1,7 +1,7 @@
 """Tkinter widget construction for the main window.
 
 This module is purely declarative — it builds widgets and returns
-references.  All callback wiring lives in :mod:`kokoro_tts.app`.
+references.  Voice list is populated dynamically after model load.
 """
 
 from __future__ import annotations
@@ -9,8 +9,6 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable
-
-from kokoro_tts.voice import ALL_VOICES
 
 
 def build_ui(
@@ -23,21 +21,15 @@ def build_ui(
 ) -> dict[str, tk.Widget | tk.StringVar]:
     """Build all widgets and return references keyed by name.
 
-    Returns a dict with keys:
-        ``voice_var``, ``voice_dropdown``, ``text_entry``,
-        ``generate_button``, ``status_label``,
-        ``play_button``, ``pause_resume_button``, ``save_button``,
-        ``progress_bar``.
+    The voice dropdown starts empty — call :func:`set_voices` after
+    the model is loaded to populate it.
     """
     # ── Voice Selection ───────────────────────────────────────
     voice_frame = ttk.LabelFrame(root, text="Voice Selection")
     voice_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
-    voice_var = tk.StringVar(value="af")
-    voice_dropdown = ttk.Combobox(
-        voice_frame, textvariable=voice_var, values=ALL_VOICES
-    )
-    voice_dropdown.current(0)
+    voice_var = tk.StringVar(value="")
+    voice_dropdown = ttk.Combobox(voice_frame, textvariable=voice_var, values=[])
     voice_dropdown.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
     # ── Text Input ────────────────────────────────────────────
@@ -48,9 +40,7 @@ def build_ui(
     text_entry.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
     # ── Generate Button ───────────────────────────────────────
-    generate_button = ttk.Button(
-        root, text="Generate Audio", command=on_generate
-    )
+    generate_button = ttk.Button(root, text="Generate Audio", command=on_generate)
     generate_button.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
     # ── Status Label ──────────────────────────────────────────
@@ -61,9 +51,7 @@ def build_ui(
     audio_frame = ttk.LabelFrame(root, text="Generated Audio")
     audio_frame.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
 
-    play_button = ttk.Button(
-        audio_frame, text="Play", command=on_play, state=tk.DISABLED
-    )
+    play_button = ttk.Button(audio_frame, text="Play", command=on_play, state=tk.DISABLED)
     play_button.grid(row=0, column=0, padx=5, pady=5)
 
     pause_resume_button = ttk.Button(
@@ -71,19 +59,15 @@ def build_ui(
     )
     pause_resume_button.grid(row=0, column=1, padx=5, pady=5)
 
-    save_button = ttk.Button(
-        audio_frame, text="Save", command=on_save, state=tk.DISABLED
-    )
+    save_button = ttk.Button(audio_frame, text="Save", command=on_save, state=tk.DISABLED)
     save_button.grid(row=0, column=2, padx=5, pady=5)
 
     # ── Progress Bar ──────────────────────────────────────────
-    progress_bar = ttk.Progressbar(
-        root, orient="horizontal", mode="indeterminate"
-    )
+    progress_bar = ttk.Progressbar(root, orient="horizontal", mode="indeterminate")
 
     # ── Grid Weights ──────────────────────────────────────────
     root.columnconfigure(0, weight=1)
-    root.rowconfigure(1, weight=1)  # Let text area expand
+    root.rowconfigure(1, weight=1)
 
     return {
         "voice_var": voice_var,
@@ -96,3 +80,12 @@ def build_ui(
         "save_button": save_button,
         "progress_bar": progress_bar,
     }
+
+
+def set_voices(widgets: dict, voices: list[str]) -> None:
+    """Populate the voice dropdown with the given voice names."""
+    widgets["voice_dropdown"]["values"] = voices
+    if voices:
+        # Default to af_heart (v1.0) or first available
+        default = "af_heart" if "af_heart" in voices else voices[0]
+        widgets["voice_var"].set(default)

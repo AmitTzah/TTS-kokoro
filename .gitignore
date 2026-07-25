@@ -49,5 +49,8 @@ Desktop.ini
 # System
 .DS_Store
 
+# Model storage (local HF cache)
+models/
+
 # Testing
 .pytest_cache/

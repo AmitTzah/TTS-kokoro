@@ -1,7 +1,10 @@
-"""Voice definitions and language mappings."""
+"""Voice management (v1.0).
 
-from __future__ import annotations
+Voices are lazy-loaded by :class:`kokoro.KPipeline` — no manual
+``torch.load()`` needed.  See :func:`kokoro_tts.ui.main_window.set_voices`
+for populating the dropdown.
+"""
 
-from kokoro_tts.config import ALL_VOICES, VOICE_CATEGORIES, VOICE_LANG
+from kokoro_tts.config import LANG_CODES
 
-__all__ = ["ALL_VOICES", "VOICE_CATEGORIES", "VOICE_LANG"]
+__all__ = ["LANG_CODES"]

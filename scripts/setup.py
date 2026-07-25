@@ -1,4 +1,7 @@
-"""Setup script — downloads model + voice files and generates a test audio.
+"""Setup script — installs kokoro package and generates test audio.
+
+The ``kokoro`` pip package auto-downloads model weights on first use.
+This script also checks Hugging Face for newer releases.
 
 Usage::
 
@@ -7,6 +10,7 @@ Usage::
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,84 +20,93 @@ import requests
 _SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(_SRC))
 
-from kokoro_tts.config import (
-    ALL_VOICES,
-    KOKORO_DIR,
-    MODEL_PATH,
-    VOICES_DIR,
-    configure_espeak,
-)
-from kokoro_tts.model.loader import load_model
-from kokoro_tts.tts.generator import generate_audio
+from kokoro_tts.config import configure_espeak
+
+HF_MODEL_ID = "hexgrad/Kokoro-82M"
+CURRENT_VERSION = "v1.0"
 
 
-def _download(url: str, dest: Path) -> None:
-    """Download a file with progress reporting."""
-    if dest.exists():
-        print(f"  SKIP  {dest.name} (already exists)")
+def _check_for_updates() -> None:
+    """Query the Hugging Face API for the latest model SHA."""
+    url = f"https://huggingface.co/api/models/{HF_MODEL_ID}"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        print("  (could not check for model updates — offline?)")
         return
 
-    print(f"  DOWNLOAD  {dest.name}  ...", end=" ", flush=True)
-    resp = requests.get(url, stream=True)
-    resp.raise_for_status()
+    latest_sha = data.get("sha", "")[:8]
+    if latest_sha:
+        print(f"  Model SHA: {latest_sha}")
+        print(f"  Visit: https://huggingface.co/{HF_MODEL_ID}")
 
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with open(dest, "wb") as f:
-        for chunk in resp.iter_content(1024):
-            f.write(chunk)
-    print("done.")
+
+def _cleanup_vendor() -> None:
+    """Offer to delete the old vendored Kokoro-82M/ directory."""
+    vendor = Path(__file__).resolve().parent.parent / "Kokoro-82M"
+    if not vendor.exists():
+        return
+
+    print(f"\n  Old vendored model found: {vendor}")
+    print("  v1.0 uses the kokoro pip package — these files are obsolete.")
+    answer = input("  Delete Kokoro-82M/ ? [y/N]: ").strip().lower()
+    if answer == "y":
+        import shutil
+
+        shutil.rmtree(vendor)
+        print("  Deleted.")
 
 
 def main() -> None:
-    """Run the setup: download files, load model, generate test audio."""
-    print("Kokoro TTS Setup\n" + "=" * 50)
+    """Run the setup."""
+    print("Kokoro TTS v1.0 Setup\n" + "=" * 50)
+
+    # 0. Check for updates + cleanup
+    print("\n[0/4] Checking for updates ...")
+    _check_for_updates()
+    _cleanup_vendor()
 
     # 1. Configure eSpeak
     print("\n[1/4] Configuring eSpeak-NG ...")
     configure_espeak()
     print("  OK.")
 
-    # 2. Download model
-    print("\n[2/4] Downloading model ...")
-    _download(
-        "https://huggingface.co/hexgrad/Kokoro-82M/resolve/2f0893c/kokoro-v0_19.pth",
-        MODEL_PATH,
-    )
-
-    # 3. Download voices
-    print("\n[3/4] Downloading voices ...")
-    for name in ALL_VOICES:
-        _download(
-            f"https://huggingface.co/hexgrad/Kokoro-82M/resolve/2f0893c/voices/{name}.pt",
-            VOICES_DIR / f"{name}.pt",
+    # 2. Ensure kokoro package is installed
+    print("\n[2/4] Checking kokoro package ...")
+    try:
+        import kokoro  # noqa: F401
+    except ImportError:
+        print("  Installing kokoro...")
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "kokoro>=0.9.2"]
         )
+    print(f"  OK (kokoro available)")
+
+    # 3. First-run model download
+    print("\n[3/4] Initialising model (first run downloads ~300MB) ...")
+    from kokoro import KPipeline
+
+    print("  This may take a few minutes on first run...")
+    pipeline = KPipeline(lang_code="a")
+    print(f"  Model loaded on: {pipeline.model.device if pipeline.model else 'cpu'}")
 
     # 4. Test generation
     print("\n[4/4] Testing audio generation ...")
-    import torch
-
-    if not torch.cuda.is_available():
-        print("  ⚠ WARNING: CUDA not available — using CPU (slow).")
-        print("    To use your NVIDIA GPU, install the CUDA version of PyTorch:")
-        print("    pip uninstall torch torchvision torchaudio -y")
-        print("    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124")
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"  Device: {device}")
-
-    model = load_model(device)
-    voicepack = torch.load(
-        str(VOICES_DIR / "af.pt"), map_location=device, weights_only=True
-    )
-
     text = (
         "How could I know? It's an unanswerable question. "
         "Like asking an unborn child if they'll lead a good life. "
         "They haven't even been born."
     )
-    wav_path, phonemes = generate_audio(model, text, voicepack, lang="a")
+
+    from kokoro_tts.tts.generator import generate_audio
+
+    wav_path, phonemes = generate_audio(pipeline, text, "af_heart")
     print(f"  Output : {wav_path}")
-    print(f"  Phonemes: {phonemes}")
+    if phonemes:
+        safe = phonemes.encode("ascii", "replace").decode()
+        print(f"  Phonemes: {safe}")
 
     print("\n" + "=" * 50)
     print("Setup complete!  Run the GUI with:  python -m kokoro_tts")

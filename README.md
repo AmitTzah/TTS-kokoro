@@ -1,192 +1,97 @@
-# Kokoro TTS GUI
+<h1 align="center">Kokoro TTS GUI</h1>
 
-A graphical interface for the Kokoro-82M text-to-speech model, providing an easy way to generate high-quality speech with various voice options.
+<p align="center">
+  Desktop GUI for <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> v1.0 on Windows
+</p>
 
-## Features
-- **Instant splash screen** — window appears within milliseconds, with progress feedback during model/voice loading
-- Multiple voice options (American/British English, 11 voices)
-- Real-time audio generation
-- Audio playback controls (play/pause/stop)
-- Save generated audio as WAV files
-- Automatic model download and setup
+<p align="center">
+  <a href="https://github.com/AmitTzah/TTS-kokoro/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
+  <img src="https://img.shields.io/badge/python-3.8–3.12-blue" alt="Python">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey" alt="Platform">
+</p>
 
-## Requirements
-- Windows 10/11
-- Python 3.8–3.12 (Python 3.13+ is not yet supported by all dependencies)
-- eSpeak NG installed at `C:\Program Files\eSpeak NG`
-- NVIDIA GPU with CUDA support (optional but recommended)
+---
 
-## Quick Start
+Type or paste text, pick a voice, generate audio. All local.
+
+## Install
+
+You need Python 3.8–3.12 and [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) at `C:\Program Files\eSpeak NG`.
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/AmitTzah/TTS-kokoro
+cd TTS-kokoro
 pip install -e .
-
-# 2. Download model + voices, run a test
-python scripts/setup.py
-
-# 3. Launch the GUI
-python -m kokoro_tts
+python scripts/setup.py        # downloads model (~300MB) + tests
+python -m kokoro_tts            # launch
 ```
 
-Or use the legacy wrapper:
+Or double-click `tts-gui.pyw`.
+
+For NVIDIA GPU:
+
 ```bash
-python tts-gui.pyw
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 ```
-
-## Project Structure
-
-```
-TTS-kokoro/
-├── pyproject.toml                  # Package metadata + dependencies
-├── README.md
-├── .gitignore
-├── tts-gui.pyw                     # Legacy wrapper (delegates to kokoro_tts)
-├── src/
-│   └── kokoro_tts/
-│       ├── __init__.py
-│       ├── __main__.py             # Entry point: python -m kokoro_tts
-│       ├── config.py               # Paths, constants, env setup
-│       ├── splash.py               # Splash window
-│       ├── app.py                  # Controller (orchestrates everything)
-│       ├── model/
-│       │   └── loader.py           # Model loading
-│       ├── voice/
-│       │   ├── loader.py           # Voice pack loading
-│       │   └── __init__.py         # Voice definitions (re-exports from config)
-│       ├── tts/
-│       │   └── generator.py        # Audio generation
-│       ├── audio/
-│       │   ├── player.py           # Pygame playback
-│       │   └── saver.py            # WAV save dialog
-│       └── ui/
-│           ├── main_window.py      # Widget construction
-│           └── events.py           # UI state management
-├── tests/
-│   ├── conftest.py
-│   ├── test_config.py
-│   ├── test_generator.py
-│   ├── test_player.py
-│   └── test_voice_loader.py
-├── scripts/
-│   └── setup.py                    # Model/voice download + test
-└── Kokoro-82M/                     # Vendored model (unchanged)
-    ├── kokoro.py
-    ├── models.py
-    ├── istftnet.py
-    ├── plbert.py
-    ├── config.json
-    ├── kokoro-v0_19.pth
-    ├── fp16/
-    │   └── halve.py
-    └── voices/
-        └── [11 .pt files]
-```
-
-## Installation (Manual)
-
-1. Install eSpeak NG:
-   - Download 1.51 64x.msi version from [eSpeak NG releases](https://github.com/espeak-ng/espeak-ng/releases)
-   - Install to `C:\Program Files\eSpeak NG`
-
-2. Install PyTorch — **CUDA version** (NVIDIA GPU, recommended) or CPU-only:
-   ```bash
-   # For NVIDIA GPU (much faster):
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-
-   # For CPU only (slower, no GPU required):
-   pip install torch torchvision torchaudio
-   ```
-
-3. Install remaining Python dependencies:
-   ```bash
-   pip install soundfile pygame phonemizer requests scipy munch transformers
-   ```
-
-4. Clone this repository:
-   ```bash
-   git clone https://github.com/AmitTzah/TTS-kokoro
-   cd TTS-kokoro
-   ```
-
-5. Run the setup script:
-   ```bash
-   python scripts/setup.py
-   ```
 
 ## Usage
 
-Launch the GUI:
-```bash
-python -m kokoro_tts
+1. Launch, wait for model to load
+2. Pick a voice
+3. Type text, click Generate
+4. Play, pause, stop, save
+
+## Voices
+
+54+ voices across 9 languages. The voice list is fetched from Hugging Face at startup.
+
+| Language | Code | Examples |
+|----------|------|----------|
+| American English | `a` | `af_heart`, `af_bella`, `am_adam` |
+| British English | `b` | `bf_emma`, `bf_isabella`, `bm_george` |
+| Japanese | `j` | `jf_alpha`, `jm_alpha` |
+| Mandarin Chinese | `z` | `zf_alpha`, `zm_alpha` |
+| Spanish, French, Hindi, Italian, Portuguese | `e`, `f`, `h`, `i`, `p` | espeak-ng voices |
+
+## Structure
+
+```
+TTS-kokoro/
+├── tts-gui.pyw
+├── src/kokoro_tts/
+│   ├── __main__.py          ← entry point
+│   ├── app.py               ← controller
+│   ├── config.py            ← paths, languages, HF_HOME
+│   ├── splash.py            ← splash window
+│   ├── tts/generator.py     ← audio generation
+│   ├── audio/player.py      ← playback
+│   ├── audio/saver.py       ← WAV export
+│   └── ui/                  ← tkinter widgets + state
+├── scripts/setup.py         ← install + version check
+├── tests/                   ← 9 tests
+└── models/                  ← gitignored, model weights
 ```
 
-1. The splash window appears instantly with "Loading Kokoro TTS..."
-2. A progress bar shows model and voice loading status
-3. Select a voice from the dropdown menu
-4. Enter text in the input box
-5. Click "Generate Audio" to create speech
-6. Use the playback controls to listen
-7. Save the audio using the "Save" button
+## How it works
 
-## Voice Options
+Uses the [`kokoro`](https://pypi.org/project/kokoro/) pip package. `KPipeline` handles G2P, chunking, voice loading, and model download. Weights go into `models/huggingface/` (gitignored). Generation runs on a background thread.
 
-The GUI provides 11 unique voices:
+## Dev
 
-### American English
-- af (Default — 50/50 mix of Bella & Sarah)
-- af_bella
-- af_nicole
-- af_sarah
-- af_sky
-- am_adam
-- am_michael
-
-### British English
-- bf_emma
-- bf_isabella
-- bm_george
-- bm_lewis
-
-## Development
-
-Run the test suite:
 ```bash
 python -m pytest tests/ -v
+python scripts/setup.py      # also checks for model updates
 ```
 
 ## Troubleshooting
 
-### pip Not Found on Windows
-If `pip` is not recognized after installing Python:
-- Use `python -m pip` instead (e.g., `python -m pip install torch`)
-- Or add `Python312\Scripts\` to your user PATH environment variable
+**eSpeak not found**: must be `C:\Program Files\eSpeak NG\libespeak-ng.dll`.
 
-### eSpeak NG Installation
-- Ensure eSpeak NG is installed at `C:\Program Files\eSpeak NG`
-- Verify the following files exist:
-  - `C:\Program Files\eSpeak NG\libespeak-ng.dll`
-  - `C:\Program Files\eSpeak NG\espeak-ng.exe`
+**Model on cpu**: you have CPU PyTorch. Reinstall with CUDA (see above).
 
-### Model Download Issues
-If model files fail to download:
-1. Check your internet connection
-2. Try running the setup script again:
-   ```bash
-   python scripts/setup.py
-   ```
-
-### CUDA Support
-- If you have an NVIDIA GPU, install the CUDA version of PyTorch:
-  ```bash
-  pip uninstall torch torchvision torchaudio -y
-  pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-  ```
-- Verify with: `python -c "import torch; print(torch.cuda.is_available())"` — should print `True`
-- The GUI will automatically use CUDA if available and show `"model on cuda"` in the status bar
-- If it shows `"model on cpu"`, you have the CPU-only PyTorch build — reinstall as above
+**Download fails**: delete `models/huggingface/` to retry.
 
 ## License
-This project is licensed under the Apache 2.0 License — see the [LICENSE](LICENSE) file for details.
 
-The Kokoro-82M model is licensed under Apache 2.0. eSpeak NG is licensed under GPLv3.
+Apache 2.0.
