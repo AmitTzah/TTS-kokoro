@@ -78,7 +78,7 @@ TTS-Studio/
 │   ├── audio/                   ← player (pygame) + saver
 │   ├── tts/                     ← Kokoro audio generator
 │   └── ui/                      ← main window, model manager, settings, seek bar
-├── tests/                       ← 65 tests (unit)
+├── tests/                       ← 39 tests (unit)
 ├── models/                      ← model storage (gitignored)
 └── pyproject.toml
 ```
@@ -87,7 +87,7 @@ TTS-Studio/
 
 ```bash
 pip install pytest
-python -m pytest tests/ -v       # 65 tests, <1s
+python -m pytest tests/ -v       # 39 tests, <1s
 ```
 
 Tests cover all pure-logic modules: config, registry, settings, engine, player, text utils, generation, voice manager. GUI modules need a display for testing.
