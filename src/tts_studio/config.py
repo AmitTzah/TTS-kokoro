@@ -26,10 +26,23 @@ else:
 
 
 def configure_espeak() -> None:
-    if not os.path.exists(ESPEAK_LIBRARY_PATH):
-        raise FileNotFoundError(f"espeak library not found: {ESPEAK_LIBRARY_PATH}")
-    if not os.path.exists(ESPEAK_EXECUTABLE_PATH):
-        raise FileNotFoundError(f"espeak executable not found: {ESPEAK_EXECUTABLE_PATH}")
+    """Set eSpeak environment variables for phonemizer.
+
+    On Windows the DLL must be present at the exact path.  On other
+    platforms we set the names and let the system linker / ``$PATH``
+    resolve them — most package managers install eSpeak to standard
+    locations.
+    """
+    if _sys.platform == "win32":
+        if not os.path.exists(ESPEAK_LIBRARY_PATH):
+            raise FileNotFoundError(
+                f"espeak library not found: {ESPEAK_LIBRARY_PATH}"
+            )
+        if not os.path.exists(ESPEAK_EXECUTABLE_PATH):
+            raise FileNotFoundError(
+                f"espeak executable not found: {ESPEAK_EXECUTABLE_PATH}"
+            )
+
     os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = ESPEAK_LIBRARY_PATH
     os.environ["PHONEMIZER_ESPEAK_PATH"] = ESPEAK_EXECUTABLE_PATH
 
