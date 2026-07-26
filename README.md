@@ -12,9 +12,9 @@
 
 ---
 
-Supports multiple TTS engines: **Kokoro-82M** (54 fixed voices, 9 language variants) and **Chatterbox** (voice cloning, 23+ languages, paralinguistic tags). Switch engines via the Provider dropdown.
+Two TTS engines with multiple models each: **Kokoro** (54 fixed voices, 9 language variants) and **Chatterbox** (voice cloning, 23+ languages, paralinguistic tags). Switch engines and models via the Provider and Model dropdowns.
 
-> **Coming soon:** OmniVoice — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
+> **Coming soon:** OmniVoice engine — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
 
 ## Install
 
@@ -58,13 +58,13 @@ Use the **Manage Models** button to download or delete models. Models are stored
 
 The **Split** and **Pause** dropdowns control how text is broken up before generation. Chatterbox produces nonsense after more than a few paragraphs, so TTS Studio provides paragraph and sentence chunking with configurable pause gaps between chunks. Kokoro handles long text natively.
 
-## Engines
+## Available Models
 
-| Engine | Voices | Languages | Size |
-|--------|--------|-----------|------|
-| Kokoro v1.0 | 54 fixed | 9 | 82M |
-| Chatterbox Turbo | Default + cloning | English | 350M |
-| Chatterbox Multilingual V3 | Default + cloning | 23+ | 500M |
+| Model | Provider | Voices | Languages | Size |
+|-------|----------|--------|-----------|------|
+| Kokoro v1.0 | Kokoro | 54 fixed | 9 | 82M |
+| Chatterbox Turbo | Chatterbox | Default + cloning | English | 350M |
+| Chatterbox Multilingual V3 | Chatterbox | Default + cloning | 23+ | 500M |
 
 ## Structure
 
