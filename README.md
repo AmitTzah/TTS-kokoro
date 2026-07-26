@@ -1,7 +1,8 @@
 <h1 align="center">TTS Studio</h1>
 
 <p align="center">
-  Multi-engine desktop GUI for local TTS models
+  Lightweight multi-engine desktop GUI for local TTS models
+
 </p>
 
 <p align="center">
