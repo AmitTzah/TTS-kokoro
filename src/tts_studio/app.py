@@ -21,7 +21,7 @@ from tts_studio.ui.events import (
     set_ready,
     update_progress,
 )
-from tts_studio.settings import get_engine_settings
+from tts_studio.settings import get_engine_settings, set_engine_setting
 from tts_studio.text_utils import split_text
 from tts_studio.ui.main_window import build_ui, set_models, set_voices
 from tts_studio.ui.model_manager import ModelManager
@@ -197,7 +197,16 @@ class TTSApp:
             return
         voices = self.engine.list_voices()
         self._voice_map = {v.name: v.id for v in voices}
-        set_voices(self._widgets, list(self._voice_map.keys()))
+        voice_names = list(self._voice_map.keys())
+        set_voices(self._widgets, voice_names)
+
+        # Restore last-used voice for this engine
+        engine_name = self._widgets["provider_var"].get()
+        last_voice = get_engine_settings(engine_name).get("last_voice", "")
+        if last_voice in self._voice_map:
+            self._widgets["voice_var"].set(last_voice)
+        elif voice_names:
+            self._widgets["voice_var"].set(voice_names[0])
 
         # Set default split mode based on engine capability
         from tts_studio.engines.kokoro_engine import KokoroEngine
@@ -216,8 +225,16 @@ class TTSApp:
         self._update_delete_btn()
         # Bind dropdown change to update delete button
         self._widgets["voice_dropdown"].bind(
-            "<<ComboboxSelected>>", lambda e: self._update_delete_btn(), add="+"
+            "<<ComboboxSelected>>", lambda e: self._on_voice_selected(), add="+"
         )
+
+    def _on_voice_selected(self) -> None:
+        self._update_delete_btn()
+        # Remember last voice per engine
+        engine_name = self._widgets["provider_var"].get()
+        voice_name = self._widgets["voice_var"].get()
+        if voice_name:
+            set_engine_setting(engine_name, "last_voice", voice_name)
 
     def _update_delete_btn(self) -> None:
         voice_name = self._widgets["voice_var"].get()

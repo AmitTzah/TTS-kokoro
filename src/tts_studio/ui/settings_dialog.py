@@ -42,7 +42,9 @@ class SettingsDialog:
         settings = get_engine_settings(engine_name)
         self._all_vars[engine_name] = {}
 
-        for key, value in sorted(settings.items()):
+        # Only show numeric settings (skip last_voice etc.)
+        numeric = {k: v for k, v in settings.items() if isinstance(v, (int, float))}
+        for key, value in sorted(numeric.items()):
             row = ttk.Frame(frame)
             row.pack(fill="x", pady=3, padx=15)
 

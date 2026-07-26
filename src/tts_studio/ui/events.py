@@ -34,6 +34,7 @@ def set_ready(
 def set_generating(widgets: dict[str, Any], chunk_count: int = 1) -> None:
     """Enter 'generating' state: disable Generate, show progress + Cancel."""
     _button_state(widgets["generate_button"], tk.DISABLED)
+    widgets["cancel_button"].config(state=tk.NORMAL, text="Cancel")
     widgets["cancel_button"].grid()  # show Cancel
     _status(widgets, "Generating audio...")
     if chunk_count > 1:
