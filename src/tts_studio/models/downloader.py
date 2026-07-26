@@ -29,7 +29,7 @@ def is_downloaded(model_id: str) -> bool:
     for d in hub_dir.iterdir():
         if d.is_dir() and d.name.startswith("models--"):
             dir_repo = d.name.removeprefix("models--").replace("--", "/")
-            if model.hf_repo.startswith(dir_repo) or dir_repo.startswith(model.hf_repo):
+            if model.hf_repo == dir_repo:
                 return True
     return False
 
@@ -49,7 +49,7 @@ def get_downloaded_models() -> list[str]:
             dir_repo = d.name.removeprefix("models--").replace("--", "/")
 
             for model in AVAILABLE_MODELS:
-                if model.hf_repo.startswith(dir_repo) or dir_repo.startswith(model.hf_repo):
+                if model.hf_repo == dir_repo:
                     downloaded.append(model.id)
 
     return downloaded
