@@ -172,13 +172,17 @@ class ChatterboxEngine(TTSEngine):
             self._last_voice = "default"
 
         with _suppress_stdout():
+            gen_kwargs = {
+                k: v for k, v in kwargs.items()
+                if k in ("exaggeration", "cfg_weight", "temperature", "repetition_penalty")
+            }
             if self._is_multilingual:
                 lang = kwargs.get("language_id", "en")
                 wav = self._model.generate(
-                    text, language_id=lang, audio_prompt_path=audio_prompt
+                    text, language_id=lang, audio_prompt_path=audio_prompt, **gen_kwargs
                 )
             else:
-                wav = self._model.generate(text, audio_prompt_path=audio_prompt)
+                wav = self._model.generate(text, audio_prompt_path=audio_prompt, **gen_kwargs)
 
         wav = wav.cpu() if wav.is_cuda else wav
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:

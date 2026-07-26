@@ -47,14 +47,18 @@ def _run() -> None:
     root, label = create_splash()
     configure_espeak()
 
-    # Pump events one more time before the heavy import so Windows
-    # doesn't mark the splash as "Not Responding"
     root.update()
 
-    from tts_studio.app import TTSApp
+    # Defer the heavy import so the splash has time to render fully.
+    # Without this, Windows marks the window "Not Responding" during
+    # the 3-5 second import of torch/kokoro/chatterbox.
+    def _build_ui():
+        from tts_studio.app import TTSApp  # noqa: E402
 
-    destroy_splash(root, label)
-    TTSApp(root)
+        destroy_splash(root, label)
+        TTSApp(root)
+
+    root.after(100, _build_ui)
     root.mainloop()
 
 

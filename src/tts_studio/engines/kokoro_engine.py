@@ -68,8 +68,8 @@ class KokoroEngine(TTSEngine):
 
         from tts_studio.tts.generator import generate_audio
 
-        # KPipeline handles chunking natively — split param is ignored
-        return generate_audio(self._pipeline, text, voice_id)
+        speed = kwargs.get("speed", 1.0)
+        return generate_audio(self._pipeline, text, voice_id, speed=speed)
 
     def unload(self) -> None:
         import torch

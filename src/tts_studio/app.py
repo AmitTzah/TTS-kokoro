@@ -21,6 +21,7 @@ from tts_studio.ui.events import (
     set_ready,
     update_progress,
 )
+from tts_studio.settings import get_engine_settings
 from tts_studio.text_utils import split_text
 from tts_studio.ui.main_window import build_ui, set_models, set_voices
 from tts_studio.ui.model_manager import ModelManager
@@ -41,6 +42,8 @@ class TTSApp:
         self._audio_file: Path | None = None
         self._paused = False
         self._voice_map: dict[str, str] = {}  # display_name → voice_id
+        self._settings_dialog: tk.Toplevel | None = None
+        self._model_manager_dialog: tk.Toplevel | None = None
 
         self.player = AudioPlayer(frequency=SAMPLE_RATE)
 
@@ -55,6 +58,7 @@ class TTSApp:
             on_model_manager=self._open_model_manager,
             on_clone_voice=self._on_clone_voice,
             on_delete_voice=self._on_delete_voice,
+            on_settings=self._on_settings,
         )
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -221,11 +225,37 @@ class TTSApp:
             else:
                 self._widgets["delete_btn"].config(state=tk.DISABLED)
 
+    # ── settings ─────────────────────────────────────────────
+
+    def _on_settings(self) -> None:
+        if self._settings_dialog is not None and self._settings_dialog.winfo_exists():
+            self._settings_dialog.lift()
+            return
+
+        from tts_studio.ui.settings_dialog import SettingsDialog
+
+        self._settings_dialog = tk.Toplevel(self.root)
+        SettingsDialog(self._settings_dialog, parent=self.root)
+        self._settings_dialog.protocol("WM_DELETE_WINDOW", self._on_settings_closed)
+
+    def _on_settings_closed(self) -> None:
+        self._settings_dialog.destroy()
+        self._settings_dialog = None
+
     # ── model manager ────────────────────────────────────────
 
     def _open_model_manager(self) -> None:
-        dialog = tk.Toplevel(self.root)
-        ModelManager(dialog)
+        if self._model_manager_dialog is not None and self._model_manager_dialog.winfo_exists():
+            self._model_manager_dialog.lift()
+            return
+
+        self._model_manager_dialog = tk.Toplevel(self.root)
+        ModelManager(self._model_manager_dialog, parent=self.root)
+        self._model_manager_dialog.protocol("WM_DELETE_WINDOW", self._on_model_manager_closed)
+
+    def _on_model_manager_closed(self) -> None:
+        self._model_manager_dialog.destroy()
+        self._model_manager_dialog = None
 
     # ── generate ─────────────────────────────────────────────
 
@@ -269,7 +299,9 @@ class TTSApp:
                 if not chunk.strip():
                     continue
                 try:
-                    wav_path, _ = self.engine.generate(chunk, voice_id)
+                    engine_name = self._widgets["provider_var"].get()
+                    settings = get_engine_settings(engine_name)
+                    wav_path, _ = self.engine.generate(chunk, voice_id, **settings)
                     data, _ = sf.read(str(wav_path))
                     all_wavs.append(data)
                     wav_path.unlink()

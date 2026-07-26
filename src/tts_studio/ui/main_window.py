@@ -19,6 +19,7 @@ def build_ui(
     on_model_manager: Callable[[], None],
     on_clone_voice: Callable[[], None],
     on_delete_voice: Callable[[], None],
+    on_settings: Callable[[], None],
 ) -> dict[str, tk.Widget | tk.StringVar]:
     """Build all widgets."""
 
@@ -28,6 +29,9 @@ def build_ui(
 
     ttk.Button(
         toolbar, text="Manage Models", command=on_model_manager
+    ).pack(side="left", padx=(0, 5))
+    ttk.Button(
+        toolbar, text="⚙ Settings", command=on_settings
     ).pack(side="left")
 
     # ── Provider + Model selection ───────────────────────────

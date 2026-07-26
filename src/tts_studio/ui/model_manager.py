@@ -16,11 +16,16 @@ from tts_studio.models.manager import (
 class ModelManager:
     """Dialog for managing installed TTS models."""
 
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, parent: tk.Tk | None = None):
         self.root = root
         self.root.title("Model Manager")
         self.root.geometry("550x420")
         self.root.resizable(True, True)
+
+        if parent is not None:
+            px = parent.winfo_rootx() + 50
+            py = parent.winfo_rooty() + 50
+            self.root.geometry(f"+{px}+{py}")
 
         self._build()
         self._refresh()
