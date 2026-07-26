@@ -16,6 +16,8 @@ Two TTS engines with multiple models each: **Kokoro** (54 fixed voices, 9 langua
 
 > **Coming soon:** OmniVoice engine — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
 
+![Screenshot](screenshot.png)
+
 ## Install
 
 Python 3.8–3.12. **Tested on Windows.** Linux/macOS may work but haven't been verified — PRs welcome.

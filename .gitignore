@@ -33,6 +33,7 @@ env/
 # Demo/output files
 *.wav
 *.png
+!screenshot.png
 
 # Windows
 *.lnk
