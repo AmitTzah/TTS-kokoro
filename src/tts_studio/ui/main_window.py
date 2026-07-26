@@ -127,15 +127,19 @@ def build_ui(
     split_var.trace_add("write", _on_split_change)
 
     generate_button = ttk.Button(root, text="Generate Audio", command=on_generate)
-    generate_button.grid(row=5, column=0, padx=10, pady=(5, 5), sticky="ew")
+    generate_button.grid(row=5, column=0, padx=10, pady=(5, 2), sticky="ew")
+
+    cancel_button = ttk.Button(root, text="Cancel", command=on_generate)  # callback patched later
+    cancel_button.grid(row=6, column=0, padx=10, pady=(0, 5), sticky="ew")
+    cancel_button.grid_remove()  # hidden until generation starts
 
     # ── Status Label ─────────────────────────────────────────
     status_label = ttk.Label(root, text="")
-    status_label.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
+    status_label.grid(row=7, column=0, padx=10, pady=5, sticky="ew")
 
     # ── Audio Controls ───────────────────────────────────────
     audio_frame = ttk.LabelFrame(root, text="Generated Audio")
-    audio_frame.grid(row=7, column=0, padx=10, pady=(5, 10), sticky="ew")
+    audio_frame.grid(row=8, column=0, padx=10, pady=(5, 10), sticky="ew")
 
     play_button = ttk.Button(audio_frame, text="Play", command=on_play, state=tk.DISABLED)
     play_button.grid(row=0, column=0, padx=5, pady=5)
@@ -166,6 +170,7 @@ def build_ui(
         "delete_btn": delete_btn,
         "text_entry": text_entry,
         "generate_button": generate_button,
+        "cancel_button": cancel_button,
         "status_label": status_label,
         "play_button": play_button,
         "pause_resume_button": pause_resume_button,

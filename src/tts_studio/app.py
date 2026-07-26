@@ -44,6 +44,7 @@ class TTSApp:
         self._voice_map: dict[str, str] = {}  # display_name → voice_id
         self._settings_dialog: tk.Toplevel | None = None
         self._model_manager_dialog: tk.Toplevel | None = None
+        self._cancel_event = threading.Event()
 
         self.player = AudioPlayer(frequency=SAMPLE_RATE)
 
@@ -62,6 +63,10 @@ class TTSApp:
         )
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        # Wire cancel button
+        self._widgets["cancel_button"].config(command=self._on_cancel)
+
         self.root.update()
         self.root.after(50, self._startup)
 
@@ -278,10 +283,15 @@ class TTSApp:
         split_mode = self._widgets["split_var"].get()
         pause_sec = float(self._widgets["pause_var"].get())
         chunk_count = len(split_text(text, split_mode)) if split_mode != "off" else 1
+        self._cancel_event.clear()
         set_generating(self._widgets, chunk_count=chunk_count)
         threading.Thread(
             target=self._generate, args=(text, voice_id, split_mode, pause_sec), daemon=True
         ).start()
+
+    def _on_cancel(self) -> None:
+        self._cancel_event.set()
+        self._widgets["cancel_button"].config(state=tk.DISABLED, text="Cancelling...")
 
     def _generate(self, text: str, voice_id: str, split_mode: str = "paragraphs", pause_sec: float = 0.35) -> None:
         import re
@@ -298,6 +308,10 @@ class TTSApp:
             for i, chunk in enumerate(chunks):
                 if not chunk.strip():
                     continue
+                # Check cancel before each chunk
+                if self._cancel_event.is_set():
+                    break
+
                 try:
                     engine_name = self._widgets["provider_var"].get()
                     settings = get_engine_settings(engine_name)
@@ -335,7 +349,9 @@ class TTSApp:
                 except OSError:
                     pass
             self._audio_file = Path(wav_path)
-            self._dispatch(set_generation_done, True, "Audio generated.")
+            cancelled = self._cancel_event.is_set()
+            msg = f"Audio generated ({len(all_wavs)}/{total} chunks)." if cancelled else "Audio generated."
+            self._dispatch(set_generation_done, True, msg)
         except Exception as exc:
             self._dispatch(set_generation_done, False, f"Error: {exc}")
 

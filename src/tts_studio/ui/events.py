@@ -32,12 +32,9 @@ def set_ready(
 
 
 def set_generating(widgets: dict[str, Any], chunk_count: int = 1) -> None:
-    """Enter 'generating' state: disable Generate, show progress.
-
-    If chunk_count > 1, use determinate mode with percentage.
-    Otherwise use indeterminate spinner.
-    """
+    """Enter 'generating' state: disable Generate, show progress + Cancel."""
     _button_state(widgets["generate_button"], tk.DISABLED)
+    widgets["cancel_button"].grid()  # show Cancel
     _status(widgets, "Generating audio...")
     if chunk_count > 1:
         widgets["progress_bar"].config(mode="determinate", maximum=100, value=0)
@@ -65,6 +62,7 @@ def set_generation_done(
     """
     _progress_hide(widgets)
     _status(widgets, message)
+    widgets["cancel_button"].grid_remove()  # hide Cancel
     _button_state(widgets["generate_button"], tk.NORMAL)
 
     if success:
