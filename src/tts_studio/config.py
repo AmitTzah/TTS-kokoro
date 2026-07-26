@@ -15,8 +15,14 @@ os.environ["HF_HOME"] = str(MODELS_DIR / "huggingface")
 ICON_PATH = _PROJECT_ROOT / "text-to-speech-icon.ico"
 
 # eSpeak (needed by kokoro)
-ESPEAK_LIBRARY_PATH = r"C:\Program Files\eSpeak NG\libespeak-ng.dll"
-ESPEAK_EXECUTABLE_PATH = r"C:\Program Files\eSpeak NG\espeak-ng.exe"
+import sys as _sys
+
+if _sys.platform == "win32":
+    ESPEAK_LIBRARY_PATH = r"C:\Program Files\eSpeak NG\libespeak-ng.dll"
+    ESPEAK_EXECUTABLE_PATH = r"C:\Program Files\eSpeak NG\espeak-ng.exe"
+else:
+    ESPEAK_LIBRARY_PATH = "libespeak-ng.so"
+    ESPEAK_EXECUTABLE_PATH = "espeak-ng"
 
 
 def configure_espeak() -> None:

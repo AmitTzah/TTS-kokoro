@@ -8,19 +8,23 @@ full UI.
 
 from __future__ import annotations
 
-import ctypes
+import sys
 import tkinter as tk
 from tkinter import ttk
 
 
 def _set_app_id() -> None:
     """Give the app its own Windows taskbar identity (not Python's icon)."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+
     try:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             "kokoro.tts.gui"
         )
     except Exception:
-        pass  # Non-Windows or API unavailable — not critical
+        pass  # API unavailable — not critical
 
 
 def create_splash() -> tuple[tk.Tk, ttk.Label]:
