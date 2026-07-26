@@ -10,13 +10,15 @@
   <img src="https://img.shields.io/badge/platform-Windows%20(tested)%20%7C%20Linux%20%7C%20macOS%20(untested)-lightgrey" alt="Platform">
 </p>
 
+<p align="center">
+  <img src="screenshot.png" alt="Screenshot" width="600">
+</p>
+
 ---
 
 Two TTS engines with multiple models each: **Kokoro** (54 fixed voices, 9 language variants) and **Chatterbox** (voice cloning, 23+ languages, paralinguistic tags). Switch engines and models via the Provider and Model dropdowns.
 
 > **Coming soon:** OmniVoice engine — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
-
-![Screenshot](screenshot.png)
 
 ## Install
 
