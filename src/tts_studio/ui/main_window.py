@@ -175,6 +175,7 @@ def build_ui(
         "play_button": play_button,
         "pause_resume_button": pause_resume_button,
         "save_button": save_button,
+        "split_combo": split_combo,
         "split_var": split_var,
         "pause_var": pause_var,
         "progress_bar": progress_bar,
@@ -191,3 +192,42 @@ def set_models(widgets: dict, models: list[str]) -> None:
     widgets["model_dropdown"]["values"] = models
     if models:
         widgets["model_var"].set(models[0])
+
+
+def set_split_enabled(widgets: dict, enabled: bool) -> None:
+    """Enable/disable the split dropdown. Show hover tooltip when disabled."""
+    combo = widgets["split_combo"]
+    if enabled:
+        combo.config(state="readonly")
+        _unbind_tooltip(combo)
+    else:
+        combo.config(state="disabled")
+        _bind_tooltip(combo, "Kokoro splits text into paragraphs natively")
+
+
+def _bind_tooltip(widget: tk.Widget, text: str) -> None:
+    tw = None
+
+    def _enter(_e):
+        nonlocal tw
+        if tw is not None:
+            return
+        tw = tk.Toplevel(widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{widget.winfo_rootx()}+{widget.winfo_rooty() + 25}")
+        label = tk.Label(tw, text=text, background="#ffffe0", relief="solid", borderwidth=1, padx=4, pady=2)
+        label.pack()
+
+    def _leave(_e):
+        nonlocal tw
+        if tw is not None:
+            tw.destroy()
+            tw = None
+
+    widget.bind("<Enter>", _enter, add="+")
+    widget.bind("<Leave>", _leave, add="+")
+
+
+def _unbind_tooltip(widget: tk.Widget) -> None:
+    widget.unbind("<Enter>")
+    widget.unbind("<Leave>")

@@ -85,8 +85,12 @@ class VoiceManager:
 
         if isinstance(self._engine, KokoroEngine):
             self._widgets["split_var"].set("off")
+            from tts_studio.ui.main_window import set_split_enabled
+            set_split_enabled(self._widgets, False)
         else:
             self._widgets["split_var"].set("paragraphs")
+            from tts_studio.ui.main_window import set_split_enabled
+            set_split_enabled(self._widgets, True)
 
         # Show/hide clone/delete buttons
         if self._engine.supports_cloning:
