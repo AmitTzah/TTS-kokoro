@@ -67,10 +67,10 @@ def set_generation_done(
     _button_state(widgets["generate_button"], tk.NORMAL)
 
     if success:
-        widgets["play_button"].config(text="Play")
+        widgets["play_button"].config(text="▶ Play")
         _button_state(widgets["play_button"], tk.NORMAL)
         _button_state(widgets["pause_resume_button"], tk.DISABLED)
-        widgets["pause_resume_button"].config(text="Pause")
+        widgets["pause_resume_button"].config(text="⏸ Pause")
         _button_state(widgets["save_button"], tk.NORMAL)
     else:
         _button_state(widgets["play_button"], tk.DISABLED)

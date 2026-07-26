@@ -20,6 +20,7 @@ def build_ui(
     on_clone_voice: Callable[[], None],
     on_delete_voice: Callable[[], None],
     on_settings: Callable[[], None],
+    on_speed_change: Callable[[str], None],
 ) -> dict[str, tk.Widget | tk.StringVar]:
     """Build all widgets."""
 
@@ -138,17 +139,45 @@ def build_ui(
     # ── Audio Controls ───────────────────────────────────────
     audio_frame = ttk.LabelFrame(root, text="Generated Audio")
     audio_frame.grid(row=8, column=0, padx=10, pady=(5, 10), sticky="ew")
+    audio_frame.columnconfigure(1, weight=1)
 
-    play_button = ttk.Button(audio_frame, text="Play", command=on_play, state=tk.DISABLED)
-    play_button.grid(row=0, column=0, padx=5, pady=5)
+    from tts_studio.ui.seek_bar import SeekBar
+
+    seek_bar = SeekBar(audio_frame)
+    seek_bar.grid(row=0, column=0, columnspan=3, padx=10, pady=(8, 4), sticky="ew")
+
+    # Transport cluster: Play / Pause / Speed grouped on the left
+    controls = ttk.Frame(audio_frame)
+    controls.grid(row=1, column=0, columnspan=2, padx=(10, 4), pady=(2, 10), sticky="w")
+
+    play_button = ttk.Button(
+        controls,
+        text="▶ Play",
+        command=on_play,
+        state=tk.DISABLED,
+        style="Accent.TButton",
+    )
+    play_button.pack(side="left")
 
     pause_resume_button = ttk.Button(
-        audio_frame, text="Pause", command=on_pause_resume, state=tk.DISABLED
+        controls, text="⏸ Pause", command=on_pause_resume, state=tk.DISABLED
     )
-    pause_resume_button.grid(row=0, column=1, padx=5, pady=5)
+    pause_resume_button.pack(side="left", padx=(6, 0))
 
-    save_button = ttk.Button(audio_frame, text="Save", command=on_save, state=tk.DISABLED)
-    save_button.grid(row=0, column=2, padx=5, pady=5)
+    ttk.Label(controls, text="Speed:").pack(side="left", padx=(14, 4))
+    speed_var = tk.StringVar(value="1.0x")
+    speed_combo = ttk.Combobox(
+        controls,
+        textvariable=speed_var,
+        values=["0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x"],
+        state="readonly",
+        width=5,
+    )
+    speed_combo.pack(side="left")
+    speed_combo.bind("<<ComboboxSelected>>", lambda _e: on_speed_change(speed_var.get()))
+
+    save_button = ttk.Button(audio_frame, text="💾 Save", command=on_save, state=tk.DISABLED)
+    save_button.grid(row=1, column=2, padx=(4, 10), pady=(2, 10), sticky="e")
 
     # ── Progress Bar ─────────────────────────────────────────
     progress_bar = ttk.Progressbar(root, orient="horizontal", mode="indeterminate")
@@ -170,9 +199,12 @@ def build_ui(
         "generate_button": generate_button,
         "cancel_button": cancel_button,
         "status_label": status_label,
+        "seek_bar": seek_bar,
         "play_button": play_button,
         "pause_resume_button": pause_resume_button,
         "save_button": save_button,
+        "speed_var": speed_var,
+        "speed_combo": speed_combo,
         "split_combo": split_combo,
         "split_var": split_var,
         "pause_var": pause_var,

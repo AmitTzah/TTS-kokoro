@@ -19,6 +19,7 @@ from tts_studio.ui.events import set_loading, set_ready
 from tts_studio.voice_manager import VoiceManager
 from tts_studio.ui.main_window import build_ui, set_models, set_voices
 from tts_studio.ui.model_manager import ModelManager
+from tts_studio.ui.theme import apply_theme
 
 
 class TTSApp:
@@ -44,6 +45,8 @@ class TTSApp:
         self.voice_manager = VoiceManager(self)
         self.generation = GenerationManager(self)
 
+        apply_theme(root)
+
         self._widgets = build_ui(
             root,
             on_generate=self._on_generate,
@@ -56,12 +59,14 @@ class TTSApp:
             on_clone_voice=self._on_clone_voice,
             on_delete_voice=self._on_delete_voice,
             on_settings=self._on_settings,
+            on_speed_change=self._on_speed_change,
         )
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # Wire cancel button to generation manager
+        # Wire cancel + seek
         self._widgets["cancel_button"].config(command=self.generation.cancel)
+        self._widgets["seek_bar"].on_seek = self._on_seek
 
         self.root.update()
         self.root.after(50, self._startup)
@@ -207,8 +212,7 @@ class TTSApp:
     def _on_play(self) -> None:
         if self.player.is_playing or self._paused:
             self.player.stop()
-            self._widgets["play_button"].config(text="Play", command=self._on_play)
-            self._widgets["pause_resume_button"].config(state=tk.DISABLED, text="Pause")
+            self._reset_playback_ui()
             self._paused = False
         else:
             try:
@@ -216,29 +220,66 @@ class TTSApp:
                     return
                 self.player.load(str(self._audio_file))
                 self.player.play()
-                self._widgets["play_button"].config(text="Stop", command=self._on_play)
-                self._widgets["pause_resume_button"].config(state=tk.NORMAL, text="Pause")
+                seek_bar = self._widgets["seek_bar"]
+                seek_bar.set_duration(self.player.duration)
+                seek_bar.set_playing(True)
+                self._widgets["play_button"].config(text="⏹ Stop", command=self._on_play)
+                self._widgets["pause_resume_button"].config(state=tk.NORMAL, text="⏸ Pause")
                 self._paused = False
-                self._poll_playback_end()
+                self._poll_position()
             except Exception as exc:
                 self._show_error("Playback Error", str(exc))
 
-    def _poll_playback_end(self) -> None:
-        if self._paused or self.player.is_playing:
-            self.root.after(200, self._poll_playback_end)
-        else:
-            self._widgets["play_button"].config(text="Play", command=self._on_play)
-            self._widgets["pause_resume_button"].config(state=tk.DISABLED, text="Pause")
+    def _reset_playback_ui(self) -> None:
+        self._widgets["play_button"].config(text="▶ Play", command=self._on_play)
+        self._widgets["pause_resume_button"].config(state=tk.DISABLED, text="⏸ Pause")
+        self._widgets["seek_bar"].reset()
+
+    def _poll_position(self) -> None:
+        if not self.player.is_playing and not self._paused:
+            self._reset_playback_ui()
             self._paused = False
+            return
+        if not self._paused:
+            self._widgets["seek_bar"].set_position(self.player.position)
+        self.root.after(100, self._poll_position)
+
+    def _on_seek(self, seconds: float) -> None:
+        self.player.seek(seconds)
+        # player.seek() restarts playback — if the UI thought we were
+        # paused, resync the pause state and button label.
+        if self._paused:
+            self._paused = False
+            self._widgets["pause_resume_button"].config(text="⏸ Pause")
+        self._widgets["seek_bar"].set_playing(True)
 
     def _on_pause_resume(self) -> None:
         if self._paused:
             self.player.unpause()
-            self._widgets["pause_resume_button"].config(text="Pause")
+            self._widgets["pause_resume_button"].config(text="⏸ Pause")
+            self._widgets["seek_bar"].set_playing(True)
         else:
             self.player.pause()
-            self._widgets["pause_resume_button"].config(text="Resume")
+            self._widgets["pause_resume_button"].config(text="▶ Resume")
+            self._widgets["seek_bar"].set_playing(False)
         self._paused = not self._paused
+
+    def _on_speed_change(self, text: str) -> None:
+        try:
+            speed = float(text.rstrip("x"))
+        except ValueError:
+            return
+        self.player.set_speed(speed)
+        # Apply immediately if audio is loaded: reload resampled and
+        # resume from the current position, preserving pause state.
+        if self._audio_file is not None and (self.player.is_playing or self._paused):
+            position = self.player.position
+            was_paused = self._paused
+            self.player.load(self._audio_file)
+            self.player.seek(position)
+            if was_paused:
+                self.player.pause()
+            self._widgets["seek_bar"].set_position(position)
 
     def _on_save(self) -> None:
         if self._audio_file is None:
@@ -250,6 +291,7 @@ class TTSApp:
     # ── cleanup ──────────────────────────────────────────────
 
     def _on_close(self) -> None:
+        self._reset_playback_ui()
         self.player.unload()
         if self._audio_file is not None and self._audio_file.exists():
             try:
