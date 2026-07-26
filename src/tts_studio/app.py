@@ -7,6 +7,8 @@ import tkinter as tk
 from pathlib import Path
 from typing import Any
 
+import pygame
+
 from tts_studio.audio.player import AudioPlayer
 from tts_studio.audio.saver import save_audio_dialog
 from tts_studio.config import ICON_PATH, SAMPLE_RATE
@@ -291,17 +293,14 @@ class TTSApp:
     # ── cleanup ──────────────────────────────────────────────
 
     def _on_close(self) -> None:
-        self._reset_playback_ui()
         self.player.unload()
         if self._audio_file is not None and self._audio_file.exists():
             try:
                 self._audio_file.unlink()
             except OSError:
                 pass
+        pygame.mixer.quit()
         self.root.destroy()
-
-    def _dispatch_progress(self, pct: float) -> None:
-        self.root.after(0, lambda: update_progress(self._widgets, pct))
 
     def _dispatch(self, fn: Any, *args: Any) -> None:
         self.root.after(0, lambda: fn(self._widgets, *args))

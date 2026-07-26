@@ -1,7 +1,7 @@
 """UI state-management helpers.
 
 Keeps widget manipulation logic separate from widget construction
-so :mod:`kokoro_tts.ui.main_window` can stay purely declarative.
+so :mod:`tts_studio.ui.main_window` can stay purely declarative.
 """
 
 from __future__ import annotations
@@ -85,6 +85,7 @@ def _status(w: dict[str, Any], text: str) -> None:
 
 
 def _progress_show(w: dict[str, Any]) -> None:
+    w["generate_button"].grid_remove()
     w["progress_bar"].grid(row=5, column=0, padx=10, pady=5, sticky="ew")
     w["progress_bar"].start()
 
@@ -92,6 +93,7 @@ def _progress_show(w: dict[str, Any]) -> None:
 def _progress_hide(w: dict[str, Any]) -> None:
     w["progress_bar"].stop()
     w["progress_bar"].grid_forget()
+    w["generate_button"].grid(row=5, column=0, padx=10, pady=(5, 2), sticky="ew")
 
 
 def _button_state(btn: ttk.Button, state: str) -> None:

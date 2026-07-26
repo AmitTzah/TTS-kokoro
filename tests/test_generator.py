@@ -1,4 +1,4 @@
-"""Tests for kokoro_tts.tts.generator — v1.0 KPipeline-based generation."""
+"""Tests for tts_studio.tts.generator — v1.0 KPipeline-based generation."""
 
 from __future__ import annotations
 

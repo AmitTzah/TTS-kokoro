@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from tts_studio.config import SAMPLE_RATE
 from tts_studio.settings import get_engine_settings
 from tts_studio.text_utils import split_text
 from tts_studio.ui.events import (
@@ -72,6 +73,8 @@ class GenerationManager:
             chunks = split_text(text, split_mode)
             all_wavs = []
             total = len(chunks)
+            failed_count = 0
+            sr = getattr(self._engine, "sample_rate", SAMPLE_RATE)
 
             for i, chunk in enumerate(chunks):
                 if not chunk.strip():
@@ -88,7 +91,8 @@ class GenerationManager:
                     wav_path.unlink()
                 except Exception as exc:
                     print(f"[WARN] Chunk {i} failed: {exc}")
-                    all_wavs.append(np.zeros(int(0.3 * 24000), dtype=np.float32))
+                    failed_count += 1
+                    all_wavs.append(np.zeros(int(0.3 * sr), dtype=np.float32))
 
                 pct = int((i + 1) / total * 100) if total > 0 else 100
                 self._dispatch_progress(pct)
@@ -97,24 +101,26 @@ class GenerationManager:
                 self._dispatch(set_generation_done, False, "No audio generated.")
                 return
 
-            sr = getattr(self._engine, "sample_rate", 24000)
             gap = np.zeros(int(pause_sec * sr), dtype=np.float32)
             combined = all_wavs[0]
             for w in all_wavs[1:]:
                 combined = np.concatenate([combined, gap, w])
 
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(prefix="tts_gen_", suffix=".wav", delete=False) as tmp:
                 sf.write(tmp.name, combined, sr)
                 wav_path = tmp.name
 
             self._app._replace_audio(Path(wav_path))
 
             cancelled = self._cancel_event.is_set()
-            msg = (
-                f"Audio generated ({len(all_wavs)}/{total} chunks)."
-                if cancelled
-                else "Audio generated."
-            )
+            if cancelled and failed_count > 0:
+                msg = f"Cancelled — {failed_count} of {total} chunks failed."
+            elif cancelled:
+                msg = f"Audio generated ({len(all_wavs)}/{total} chunks)."
+            elif failed_count > 0:
+                msg = f"Audio generated ({failed_count} of {total} chunks failed)."
+            else:
+                msg = "Audio generated."
             self._dispatch(set_generation_done, True, msg)
         except Exception as exc:
             self._dispatch(set_generation_done, False, f"Error: {exc}")

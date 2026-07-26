@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import traceback
+from pathlib import Path
 
 # Set Windows app ID at module level — earliest possible.
 if sys.platform == "win32":
@@ -44,6 +45,8 @@ def _run() -> None:
     from tts_studio.config import configure_espeak
     from tts_studio.splash import create_splash, destroy_splash
 
+    _purge_stale_temp_files()
+
     root, label = create_splash()
     configure_espeak()
 
@@ -60,6 +63,26 @@ def _run() -> None:
 
     root.after(100, _build_ui)
     root.mainloop()
+
+
+_STALE_TEMP_AGE_SECONDS = 86400  # 1 day
+
+
+def _purge_stale_temp_files() -> None:
+    """Remove app-specific temp WAV files left behind by previous crashes."""
+    import tempfile
+    import time
+
+    temp_dir = tempfile.gettempdir()
+    now = time.time()
+
+    for prefix in ("tts_gen_", "tts_speed_"):
+        for entry in Path(temp_dir).glob(f"{prefix}*.wav"):
+            try:
+                if now - entry.stat().st_mtime > _STALE_TEMP_AGE_SECONDS:
+                    entry.unlink()
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":

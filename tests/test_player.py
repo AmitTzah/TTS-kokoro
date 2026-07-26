@@ -1,4 +1,4 @@
-"""Tests for kokoro_tts.audio.player — AudioPlayer."""
+"""Tests for tts_studio.audio.player — AudioPlayer."""
 
 from __future__ import annotations
 
