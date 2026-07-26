@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/AmitTzah/TTS-Studio/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.8–3.12-blue" alt="Python">
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Windows%20(tested)%20%7C%20Linux%20%7C%20macOS%20(untested)-lightgrey" alt="Platform">
 </p>
 
 ---
@@ -18,7 +18,11 @@ Supports multiple TTS engines: **Kokoro-82M** (54 fixed voices, 9 language varia
 
 ## Install
 
-Python 3.8–3.12 and [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) at `C:\Program Files\eSpeak NG`.
+Python 3.8–3.12. **Tested on Windows.** Linux/macOS may work but haven't been verified — PRs welcome.
+
+### Windows
+
+Install [eSpeak NG](https://github.com/espeak-ng/espeak-ng/releases) to `C:\Program Files\eSpeak NG`.
 
 ```bash
 git clone https://github.com/AmitTzah/TTS-Studio
@@ -37,6 +41,10 @@ For NVIDIA GPU:
 pip uninstall torch torchvision torchaudio -y
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 ```
+
+### Linux / macOS
+
+Install eSpeak NG via your package manager (`apt install espeak-ng` / `brew install espeak-ng`), then follow the same steps above. Chatterbox requires CUDA — CPU-only users should stick with Kokoro.
 
 ## Usage
 
