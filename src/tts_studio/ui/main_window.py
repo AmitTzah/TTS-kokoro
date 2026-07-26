@@ -105,17 +105,15 @@ def build_ui(
     split_combo.pack(side="left", padx=(2, 10))
 
     ttk.Label(options_frame, text="Pause:").pack(side="left")
-    pause_var = tk.StringVar(value="0.75")
+    pause_var = tk.StringVar(value="0.75s")
     pause_combo = ttk.Combobox(
         options_frame,
         textvariable=pause_var,
-        values=["0.15", "0.35", "0.5", "0.75", "1.0", "1.5", "2.0", "3.0", "5.0"],
+        values=["0.15s", "0.35s", "0.5s", "0.75s", "1.0s", "1.5s", "2.0s", "3.0s", "5.0s"],
         state="readonly",
-        width=5,
+        width=7,
     )
     pause_combo.pack(side="left", padx=(2, 0))
-    pause_label = ttk.Label(options_frame, text="s")
-    pause_label.pack(side="left")
 
     # Grey out pause when split is off
     def _on_split_change(*args):
@@ -178,6 +176,7 @@ def build_ui(
         "split_combo": split_combo,
         "split_var": split_var,
         "pause_var": pause_var,
+        "pause_combo": pause_combo,
         "progress_bar": progress_bar,
     }
 

@@ -72,13 +72,18 @@ class VoiceManager:
         voice_names = list(self._app._voice_map.keys())
         set_voices(self._widgets, voice_names)
 
-        # Restore last-used voice for this engine
+        # Restore last-used voice and pause for this engine
         engine_name = self._widgets["provider_var"].get()
-        last_voice = get_engine_settings(engine_name).get("last_voice", "")
+        eng_settings = get_engine_settings(engine_name)
+        last_voice = eng_settings.get("last_voice", "")
         if last_voice in self._app._voice_map:
             self._widgets["voice_var"].set(last_voice)
         elif voice_names:
             self._widgets["voice_var"].set(voice_names[0])
+        # Restore pause
+        last_pause = eng_settings.get("last_pause", "")
+        if last_pause:
+            self._widgets["pause_var"].set(last_pause)
 
         # Set default split mode based on engine capability
         from tts_studio.engines.kokoro_engine import KokoroEngine
@@ -98,6 +103,10 @@ class VoiceManager:
         else:
             self._widgets["clone_btn"].config(state=tk.DISABLED)
         self._update_delete_btn()
+        # Save pause on change
+        self._widgets["pause_combo"].bind(
+            "<<ComboboxSelected>>", lambda e: self._save_pause(), add="+"
+        )
 
     def on_voice_selected(self) -> None:
         self._update_delete_btn()
@@ -105,6 +114,14 @@ class VoiceManager:
         voice_name = self._widgets["voice_var"].get()
         if voice_name:
             set_engine_setting(engine_name, "last_voice", voice_name)
+        self._save_pause(engine_name)
+
+    def _save_pause(self, engine_name: str | None = None) -> None:
+        if engine_name is None:
+            engine_name = self._widgets["provider_var"].get()
+        pause_val = self._widgets["pause_var"].get()
+        if pause_val:
+            set_engine_setting(engine_name, "last_pause", pause_val)
 
     def _update_delete_btn(self) -> None:
         voice_name = self._widgets["voice_var"].get()

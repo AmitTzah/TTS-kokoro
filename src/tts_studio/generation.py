@@ -49,7 +49,7 @@ class GenerationManager:
             return
 
         split_mode = self._widgets["split_var"].get()
-        pause_sec = float(self._widgets["pause_var"].get())
+        pause_sec = float(self._widgets["pause_var"].get().rstrip("s"))
         chunk_count = len(split_text(text, split_mode)) if split_mode != "off" else 1
         self._cancel_event.clear()
         set_generating(self._widgets, chunk_count=chunk_count)
