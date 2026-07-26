@@ -24,7 +24,7 @@ def _suppress_stdout():
         sys.stdout, sys.stderr = old_stdout, old_stderr
 
 
-# ── Monkeypatch perth before chatterbox touches it ──────────
+# Monkeypatch perth before chatterbox touches it
 import perth as _perth
 
 if _perth.PerthImplicitWatermarker is None:
@@ -48,6 +48,7 @@ class ChatterboxEngine(TTSEngine):
         self._model: Any = None
         self._model_id: str = ""
         self._is_multilingual: bool = False
+        self._device: str = "cpu"
 
     def list_models(self) -> list[ModelInfo]:
         from tts_studio.models.registry import get_models_by_provider
@@ -55,19 +56,30 @@ class ChatterboxEngine(TTSEngine):
         return get_models_by_provider("chatterbox")
 
     def load_model(self, model_id: str) -> None:
+        import torch
+
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
+
+        self._device = device
+
         if "multilingual" in model_id:
             from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
-            self._model = ChatterboxMultilingualTTS.from_pretrained(device="cuda")
+            self._model = ChatterboxMultilingualTTS.from_pretrained(device=device)
             self._is_multilingual = True
         else:
             from chatterbox.tts_turbo import ChatterboxTurboTTS
 
-            self._model = ChatterboxTurboTTS.from_pretrained(device="cuda")
+            self._model = ChatterboxTurboTTS.from_pretrained(device=device)
             self._is_multilingual = False
         self._model_id = model_id
 
-    # ── Voice management ───────────────────────────────────
+    # Voice management
 
     @property
     def supports_cloning(self) -> bool:
@@ -144,7 +156,7 @@ class ChatterboxEngine(TTSEngine):
         for f in refs_dir.glob(f"{voice_id}.*"):
             f.unlink()
 
-    # ── Generation ─────────────────────────────────────────
+    # Generation
 
     def generate(
         self, text: str, voice_id: str, **kwargs: Any
@@ -199,6 +211,7 @@ class ChatterboxEngine(TTSEngine):
         import torch
 
         self._model = None
+        self._device = "cpu"
         torch.cuda.empty_cache()
 
     @property
@@ -207,7 +220,7 @@ class ChatterboxEngine(TTSEngine):
 
     @property
     def device(self) -> str:
-        return "cuda" if self._model is not None else "cpu"
+        return self._device
 
     @property
     def sample_rate(self) -> int:

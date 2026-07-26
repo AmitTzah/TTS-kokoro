@@ -38,7 +38,7 @@ class TTSApp:
         self._loading = True
         self._audio_file: Path | None = None
         self._paused = False
-        self._voice_map: dict[str, str] = {}  # display_name → voice_id
+        self._voice_map: dict[str, str] = {}
         self._settings_dialog: tk.Toplevel | None = None
         self._model_manager_dialog: tk.Toplevel | None = None
 
@@ -66,25 +66,18 @@ class TTSApp:
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # Wire cancel + seek
         self._widgets["cancel_button"].config(command=self.generation.cancel)
         self._widgets["seek_bar"].on_seek = self._on_seek
 
         self.root.update()
         self.root.after(50, self._startup)
 
-    # ── startup ──────────────────────────────────────────────
-
     def _startup(self) -> None:
         set_loading(self._widgets, "Loading...")
-        # Populate model list for default provider
         self._on_provider_change("kokoro")
-
-    # ── provider / model switching ───────────────────────────
 
     def _on_provider_change(self, provider: str) -> None:
         downloaded = get_downloaded_models()
-        # Only show installed models for this provider
         models = [
             m for m in AVAILABLE_MODELS
             if m.provider == provider and m.id in downloaded
@@ -103,18 +96,15 @@ class TTSApp:
             self._loading = False
 
     def _on_model_change(self, model_name: str) -> None:
-        # Find model info
         model = next((m for m in AVAILABLE_MODELS if m.name == model_name), None)
         if model is None:
             return
 
         set_loading(self._widgets, f"Loading {model.name}...")
 
-        # Unload previous engine
         if self.engine is not None:
             self.engine.unload()
 
-        # Create engine for this provider
         if model.provider == "kokoro":
             self.engine = KokoroEngine()
         elif model.provider == "chatterbox":
@@ -128,7 +118,6 @@ class TTSApp:
         else:
             return
 
-        # Load model in background
         threading.Thread(target=self._load_engine, args=(model.id,), daemon=True).start()
 
     def _load_engine(self, model_id: str) -> None:
@@ -139,7 +128,6 @@ class TTSApp:
             self._loading = False
             return
 
-        # Get voices
         voices = self.engine.list_voices()
         voice_ids = [v.id for v in voices]
 
@@ -148,20 +136,17 @@ class TTSApp:
     def _on_engine_ready(self, widgets: dict, voice_ids: list[str]) -> None:
         self.voice_manager.refresh()
         self._loading = False
+        device_label = _device_label(self.engine.device)
         set_ready(
             widgets,
-            f"Ready — {len(voice_ids)} voices on {self.engine.device}.",
+            f"Ready — {len(voice_ids)} voices on {device_label}.",
         )
-
-    # ── voice cloning (delegates) ────────────────────────────
 
     def _on_clone_voice(self) -> None:
         self.voice_manager.clone_voice()
 
     def _on_delete_voice(self) -> None:
         self.voice_manager.delete_voice()
-
-    # ── settings ─────────────────────────────────────────────
 
     def _on_settings(self) -> None:
         if self._settings_dialog is not None and self._settings_dialog.winfo_exists():
@@ -178,8 +163,6 @@ class TTSApp:
         self._settings_dialog.destroy()
         self._settings_dialog = None
 
-    # ── model manager ────────────────────────────────────────
-
     def _open_model_manager(self) -> None:
         if self._model_manager_dialog is not None and self._model_manager_dialog.winfo_exists():
             self._model_manager_dialog.lift()
@@ -193,13 +176,10 @@ class TTSApp:
         self._model_manager_dialog.destroy()
         self._model_manager_dialog = None
 
-    # ── generate (delegates) ─────────────────────────────────
-
     def _on_generate(self) -> None:
         self.generation.generate()
 
     def _replace_audio(self, path: Path) -> None:
-        """Called by GenerationManager to swap in new audio."""
         if self._audio_file is not None:
             self.player.unload()
             try:
@@ -208,8 +188,6 @@ class TTSApp:
             except OSError:
                 pass
         self._audio_file = path
-
-    # ── playback ─────────────────────────────────────────────
 
     def _on_play(self) -> None:
         if self.player.is_playing or self._paused:
@@ -248,8 +226,6 @@ class TTSApp:
 
     def _on_seek(self, seconds: float) -> None:
         self.player.seek(seconds)
-        # player.seek() restarts playback — if the UI thought we were
-        # paused, resync the pause state and button label.
         if self._paused:
             self._paused = False
             self._widgets["pause_resume_button"].config(text="⏸ Pause")
@@ -272,8 +248,6 @@ class TTSApp:
         except ValueError:
             return
         self.player.set_speed(speed)
-        # Apply immediately if audio is loaded: reload resampled and
-        # resume from the current position, preserving pause state.
         if self._audio_file is not None and (self.player.is_playing or self._paused):
             position = self.player.position
             was_paused = self._paused
@@ -289,8 +263,6 @@ class TTSApp:
         dest = save_audio_dialog(self._audio_file)
         if dest:
             self._widgets["status_label"].config(text=f"Saved to {dest}")
-
-    # ── cleanup ──────────────────────────────────────────────
 
     def _on_close(self) -> None:
         self.player.unload()
@@ -310,3 +282,14 @@ class TTSApp:
         from tkinter import messagebox
 
         messagebox.showerror(title, message)
+
+
+def _device_label(device: str) -> str:
+    """Convert engine device string to user-friendly label."""
+    if device.startswith("cuda"):
+        return "GPU"
+    if device == "mps":
+        return "GPU (Apple)"
+    if device == "cpu":
+        return "CPU"
+    return device

@@ -2,7 +2,6 @@
 
 <p align="center">
   Lightweight multi-engine desktop GUI for local TTS models
-
 </p>
 
 <p align="center">
@@ -19,11 +18,11 @@
 
 Two TTS engines with multiple models each: **Kokoro** (54 fixed voices, 9 language variants) and **Chatterbox** (voice cloning, 23+ languages, paralinguistic tags). Switch engines and models via the Provider and Model dropdowns.
 
-> **Coming soon:** OmniVoice engine — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
+> **Coming soon:** OmniVoice engine, 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
 
 ## Install
 
-Python 3.8–3.12. **Tested on Windows.** Linux/macOS may work but haven't been verified — PRs welcome.
+Python 3.8–3.12. Tested on Windows. Linux/macOS may work but haven't been verified. PRs welcome.
 
 ### Windows
 
@@ -38,7 +37,7 @@ python scripts/setup.py             # pre-download models
 python -m tts_studio                # launch
 ```
 
-Or skip `setup.py` — the GUI downloads models on first use via **Manage Models**.
+Or skip `setup.py`. The GUI downloads models on first use via **Manage Models**.
 
 For NVIDIA GPU:
 
@@ -49,7 +48,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 ### Linux / macOS
 
-Install eSpeak NG via your package manager (`apt install espeak-ng` / `brew install espeak-ng`), then follow the same steps above. Chatterbox requires CUDA — CPU-only users should stick with Kokoro.
+Install eSpeak NG via your package manager (`apt install espeak-ng` / `brew install espeak-ng`), then follow the same steps above. Auto-detects CUDA, MPS, or CPU.
 
 ## Usage
 
@@ -57,7 +56,7 @@ Install eSpeak NG via your package manager (`apt install espeak-ng` / `brew inst
 2. Select a voice, type text, click **Generate Audio**
 3. Play, pause, seek, adjust speed, or save as WAV
 
-Use the **Manage Models** button to download or delete models. Models are stored in `models/` (gitignored). Voice cloning is available with Chatterbox — click ＋ to add a voice from a reference audio clip.
+Models are stored in `models/` (gitignored). Use **Manage Models** to download or delete. Voice cloning is available with Chatterbox: click ＋ to add a voice from a reference audio clip.
 
 ## Text Chunking
 
