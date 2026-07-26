@@ -1,7 +1,7 @@
 <h1 align="center">TTS Studio</h1>
 
 <p align="center">
-  Multi-engine desktop GUI for local TTS models on Windows
+  Multi-engine desktop GUI for local TTS models
 </p>
 
 <p align="center">
@@ -12,7 +12,9 @@
 
 ---
 
-Supports multiple TTS engines: **Kokoro-82M** (54 fixed voices, 9 languages) and **Chatterbox** (default voice + voice cloning, 23+ languages, paralinguistic tags). Switch engines via the Provider dropdown.
+Supports multiple TTS engines: **Kokoro-82M** (54 fixed voices, 9 language variants) and **Chatterbox** (voice cloning, 23+ languages, paralinguistic tags). Switch engines via the Provider dropdown.
+
+> **Coming soon:** OmniVoice — 600+ languages, voice cloning + voice design. ([feature branch](https://github.com/AmitTzah/TTS-Studio/tree/feature/omnivoice-provider))
 
 ## Install
 
@@ -23,11 +25,11 @@ git clone https://github.com/AmitTzah/TTS-Studio
 cd TTS-Studio
 pip install -e .                    # Kokoro engine
 pip install chatterbox-tts          # Chatterbox engine (optional)
-python scripts/setup.py             # pre-download models (~300MB each)
+python scripts/setup.py             # pre-download models
 python -m tts_studio                # launch
 ```
 
-Or skip setup.py — the GUI downloads models on first use via Manage Models.
+Or skip `setup.py` — the GUI downloads models on first use via **Manage Models**.
 
 For NVIDIA GPU:
 
@@ -38,17 +40,15 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 ## Usage
 
-1. Pick a Provider and Model from the dropdowns
-2. Select a voice, type text, click Generate
-3. Play, pause, stop, save
+1. Pick a **Provider** and **Model** from the dropdowns
+2. Select a voice, type text, click **Generate Audio**
+3. Play, pause, seek, adjust speed, or save as WAV
 
-Use the **Manage Models** button to download or delete models. Models are stored in `models/` (gitignored).
+Use the **Manage Models** button to download or delete models. Models are stored in `models/` (gitignored). Voice cloning is available with Chatterbox — click ＋ to add a voice from a reference audio clip.
 
-## Text chunking
+## Text Chunking
 
-The Split and Pause dropdowns control how text is broken up before generation.
-
-Kokoro splits on newlines and sub-splits at 510 tokens internally. It handles any length cleanly. Chatterbox produces nonsense after more than a few paragraphs, so TTS Studio provides paragraph and sentence chunking with configurable pause gaps.
+The **Split** and **Pause** dropdowns control how text is broken up before generation. Chatterbox produces nonsense after more than a few paragraphs, so TTS Studio provides paragraph and sentence chunking with configurable pause gaps between chunks. Kokoro handles long text natively.
 
 ## Engines
 
@@ -62,32 +62,35 @@ Kokoro splits on newlines and sub-splits at 510 tokens internally. It handles an
 
 ```
 TTS-Studio/
-├── tts-gui.pyw
+├── tts-gui.pyw                  ← double-click launcher (Windows)
+├── scripts/setup.py             ← CLI setup wizard
 ├── src/tts_studio/
 │   ├── app.py                   ← multi-engine controller
+│   ├── generation.py            ← text chunking + generation manager
+│   ├── voice_manager.py         ← voice cloning + selection
+│   ├── settings.py              ← per-engine settings persistence
+│   ├── config.py                ← paths, eSpeak, sample rate
 │   ├── engines/                 ← TTSEngine abstraction
+│   │   ├── base.py              ← abstract base + ModelInfo/VoiceInfo
 │   │   ├── kokoro_engine.py
 │   │   └── chatterbox_engine.py
 │   ├── models/                  ← model catalog + downloader
-│   ├── tts/generator.py
-│   ├── audio/player.py, saver.py
-│   └── ui/                      ← main window, model manager, events
-├── tests/                       ← 11 tests
-├── models/                      ← gitignored
+│   ├── audio/                   ← player (pygame) + saver
+│   ├── tts/                     ← Kokoro audio generator
+│   └── ui/                      ← main window, model manager, settings, seek bar
+├── tests/                       ← 65 tests (unit)
+├── models/                      ← model storage (gitignored)
 └── pyproject.toml
 ```
 
 ## Dev
 
 ```bash
-# Install dev deps
 pip install pytest
-
-# Run all tests (26 tests, ~1s)
-python -m pytest tests/ -v
+python -m pytest tests/ -v       # 65 tests, <1s
 ```
 
-Tests cover all pure-logic modules. GUI modules need a display for testing.
+Tests cover all pure-logic modules: config, registry, settings, engine, player, text utils, generation, voice manager. GUI modules need a display for testing.
 
 ## License
 
