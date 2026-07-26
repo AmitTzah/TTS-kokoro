@@ -1,0 +1,11 @@
+{
+  "kokoro": {
+    "speed": 1.0
+  },
+  "chatterbox": {
+    "exaggeration": 0.5,
+    "cfg_weight": 0.5,
+    "temperature": 0.8,
+    "repetition_penalty": 1.2
+  }
+}

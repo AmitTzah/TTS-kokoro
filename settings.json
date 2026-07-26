@@ -1,8 +1,0 @@
-{
-  "chatterbox": {
-    "cfg_weight": 0.5,
-    "exaggeration": 1.0,
-    "repetition_penalty": 1.2,
-    "temperature": 0.8
-  }
-}

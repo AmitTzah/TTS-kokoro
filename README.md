@@ -80,8 +80,14 @@ TTS-Studio/
 ## Dev
 
 ```bash
+# Install dev deps
+pip install pytest
+
+# Run all tests (26 tests, ~1s)
 python -m pytest tests/ -v
 ```
+
+Tests cover all pure-logic modules. GUI modules need a display for testing.
 
 ## License
 

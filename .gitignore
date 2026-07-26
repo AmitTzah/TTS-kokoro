@@ -51,6 +51,7 @@ Desktop.ini
 
 # Model storage (local HF cache)
 models/
+settings.json
 
 # Testing
 .pytest_cache/
